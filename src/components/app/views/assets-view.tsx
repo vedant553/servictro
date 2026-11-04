@@ -146,7 +146,7 @@ function CreateAssetDialog({ open, onOpenChange }: { open: boolean; onOpenChange
 
   return (
     <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) reset(); }}>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Register asset</DialogTitle>
           <DialogDescription>Capture the nameplate now — warranty, PM scheduling and analytics all depend on it.</DialogDescription>

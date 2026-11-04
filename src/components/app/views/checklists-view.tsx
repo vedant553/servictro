@@ -86,7 +86,7 @@ function CreateTemplateDialog({ open, onOpenChange }: { open: boolean; onOpenCha
 
   return (
     <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) setError(null); }}>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Create checklist template</DialogTitle>
           <DialogDescription>Version 1 is created immutable. Work orders snapshot the version they are assigned.</DialogDescription>

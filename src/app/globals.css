@@ -157,3 +157,19 @@
     background: transparent;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Right-side dialog drawers (ui/dialog.tsx).                          */
+/* The last slot-less direct child is the view's body wrapper (form or */
+/* div). Stretching it into a flex column lets the DialogFooter's      */
+/* margin-top:auto pin actions to the drawer bottom for short forms,   */
+/* while long content still overflows and scrolls under the sticky     */
+/* header/footer bands. Slotted children (header/footer/close anchor)  */
+/* are excluded, and wrappers keep their space-y-* vertical rhythm     */
+/* because sibling margins apply unchanged in a flex column.           */
+/* ------------------------------------------------------------------ */
+[data-slot="dialog-content"] > *:not([data-slot]):last-child {
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 auto;
+}

@@ -115,7 +115,7 @@ function CreateWorkOrderDialog({ open, onOpenChange }: { open: boolean; onOpenCh
 
   return (
     <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) reset(); }}>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Create work order</DialogTitle>
           <DialogDescription>Starts in draft. Add a checklist, schedule, then mark ready for dispatch.</DialogDescription>

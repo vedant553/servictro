@@ -121,7 +121,7 @@ function CreateRequestDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) reset(); }}>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Log service request</DialogTitle>
           <DialogDescription>Capture what the customer reported. Coverage is resolved automatically from warranty/AMC contracts.</DialogDescription>

@@ -106,7 +106,7 @@ function CreatePlanDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
 
   return (
     <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) setError(null); }}>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Create PM plan</DialogTitle>
           <DialogDescription>Recurrence rule + asset set. The worker generates draft work orders ahead of each due date.</DialogDescription>

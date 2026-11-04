@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth, useCurrentMembership, useCan } from "@/lib/auth/store";
 import { get as apiGet, post as apiPost } from "@/lib/api/client";
@@ -48,6 +48,8 @@ import {
   ChevronsUpDown,
   HardHat,
   Inbox,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 
 interface NavItem {
@@ -56,6 +58,9 @@ interface NavItem {
   icon: React.ComponentType<{ className?: string }>;
   permission?: string;
 }
+
+/** Persisted sidebar collapse preference (presentation-only). */
+const SIDEBAR_COLLAPSED_KEY = "servictro.sidebar.collapsed";
 
 const NAV_GROUPS: Array<{ group: string; items: NavItem[] }> = [
   {
@@ -98,22 +103,55 @@ const NAV_GROUPS: Array<{ group: string; items: NavItem[] }> = [
   },
 ];
 
-function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
+function SidebarNav({
+  onNavigate,
+  collapsed = false,
+  onToggle,
+}: {
+  onNavigate?: () => void;
+  collapsed?: boolean;
+  onToggle?: () => void;
+}) {
   const route = useHashRoute();
   const can = useCan();
   const membership = useCurrentMembership();
   const tenant = useAuth((s) => s.tenant);
 
   return (
-    <div className="flex h-full flex-col gap-1 overflow-y-auto px-3 pb-3 pt-4 [scrollbar-width:thin]">
-      <div className="mb-3 flex items-center gap-3 px-2 py-1.5">
+    <div className="flex h-full flex-col gap-1 overflow-y-auto overflow-x-hidden px-3 pb-3 pt-4 [scrollbar-width:thin]">
+      <div
+        className={cn(
+          "mb-3 flex items-center gap-3 px-2 py-1.5",
+          collapsed && "flex-col justify-center gap-2.5 px-0",
+        )}
+      >
         <img src="/logo-mark.png" alt="Servictro" className="size-9 shrink-0 rounded-lg" />
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-white">Servictro</p>
-          <p className="truncate text-xs text-white/55" title={tenant?.name ?? membership?.tenantName}>
-            {tenant?.name ?? membership?.tenantName ?? "Workspace"}
-          </p>
-        </div>
+        {!collapsed ? (
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-white">Servictro</p>
+            <p className="truncate text-xs text-white/55" title={tenant?.name ?? membership?.tenantName}>
+              {tenant?.name ?? membership?.tenantName ?? "Workspace"}
+            </p>
+          </div>
+        ) : null}
+        {onToggle ? (
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className={cn(
+              "grid size-8 shrink-0 place-items-center rounded-md text-white/70 outline-none transition-colors hover:bg-white/[0.1] hover:text-white focus-visible:ring-2 focus-visible:ring-ring/60",
+              !collapsed && "ml-auto",
+            )}
+          >
+            {collapsed ? (
+              <PanelLeftOpen className="size-5" aria-hidden />
+            ) : (
+              <PanelLeftClose className="size-5" aria-hidden />
+            )}
+          </button>
+        ) : null}
       </div>
 
       {NAV_GROUPS.map(({ group, items }) => {
@@ -121,7 +159,11 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
         if (!visible.length) return null;
         return (
           <div key={group} className="mb-1">
-            <p className="px-2 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-widest text-white/45">{group}</p>
+            {collapsed ? (
+              <div className="mx-3 my-2 border-t border-white/10" aria-hidden />
+            ) : (
+              <p className="px-2 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-widest text-white/45">{group}</p>
+            )}
             <nav aria-label={group} className="space-y-0.5">
               {visible.map((item) => {
                 const active = route.path === item.path || route.path.startsWith(`${item.path}/`);
@@ -133,7 +175,8 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                     aria-current={active ? "page" : undefined}
                     title={item.label}
                     className={cn(
-                      "relative flex h-9 items-center gap-3 rounded-md px-2.5 text-sm text-white/65 outline-none transition-colors hover:bg-white/[0.07] hover:text-white focus-visible:ring-2 focus-visible:ring-ring/60",
+                      "relative flex h-9 items-center rounded-md text-sm text-white/65 outline-none transition-colors hover:bg-white/[0.07] hover:text-white focus-visible:ring-2 focus-visible:ring-ring/60",
+                      collapsed ? "justify-center gap-0 px-2" : "gap-3 px-2.5",
                       active && "bg-primary font-medium text-white shadow-sm hover:bg-primary",
                     )}
                   >
@@ -143,8 +186,8 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                         aria-hidden
                       />
                     ) : null}
-                    <item.icon className="size-4 shrink-0" aria-hidden />
-                    <span className="truncate">{item.label}</span>
+                    <item.icon className={cn("shrink-0", collapsed ? "size-5" : "size-4.5")} aria-hidden />
+                    {!collapsed ? <span className="truncate">{item.label}</span> : null}
                   </a>
                 );
               })}
@@ -154,9 +197,15 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
       })}
 
       <div className="mt-auto border-t border-white/10 px-2 pb-1 pt-3 text-[10px] leading-relaxed text-white/40">
-        Servictro v0.1 · demo environment
-        <br />
-        data isolated per tenant
+        {collapsed ? (
+          <p className="text-center">v0.1</p>
+        ) : (
+          <>
+            Servictro v0.1 · demo environment
+            <br />
+            data isolated per tenant
+          </>
+        )}
       </div>
     </div>
   );
@@ -346,14 +395,37 @@ function UserMenu() {
 
 export function AppShell({ children, title }: { children: React.ReactNode; title: string }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return window.localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
   const can = useCan();
   const notificationsVisible = can("notifications:read");
 
+  // Persist the collapse preference — presentation-only, no behaviour change.
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? "1" : "0");
+    } catch {
+      /* storage unavailable — preference simply not persisted */
+    }
+  }, [collapsed]);
+
   return (
     <div className="flex min-h-screen bg-background">
-      {/* Desktop sidebar */}
-      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 bg-[#0b1f33] lg:block" aria-label="Primary">
-        <SidebarNav />
+      {/* Desktop sidebar — collapsible icon rail */}
+      <aside
+        aria-label="Primary"
+        className={cn(
+          "sticky top-0 hidden h-screen shrink-0 overflow-hidden bg-[#0b1f33] transition-[width] duration-300 ease-in-out lg:block",
+          collapsed ? "w-[4.5rem]" : "w-60",
+        )}
+      >
+        <SidebarNav collapsed={collapsed} onToggle={() => setCollapsed((v) => !v)} />
       </aside>
 
       {/* Main column */}

@@ -94,7 +94,7 @@ function CreateContractDialog({ open, onOpenChange }: { open: boolean; onOpenCha
 
   return (
     <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) setError(null); }}>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Create contract</DialogTitle>
           <DialogDescription>Warranty, AMC or one-off service — must cover at least one asset to have effect.</DialogDescription>
