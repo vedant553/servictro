@@ -4,7 +4,9 @@
   "private": true,
   "description": "ServiceOS web console — Next.js 16 (App Router) + Tailwind 4 + shadcn/ui",
   "scripts": {
+    "predev": "bash scripts/ensure-workspace-builds.sh",
     "dev": "next dev -p 3000 2>&1 | tee dev.log",
+    "prebuild": "bash scripts/ensure-workspace-builds.sh",
     "build": "next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",
     "start": "NODE_ENV=production bun .next/standalone/server.js 2>&1 | tee server.log",
     "lint": "eslint src",
