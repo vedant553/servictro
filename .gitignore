@@ -1,2 +1,35 @@
-skills/
+# dependencies / build artifacts
 node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.next/
+.turbo/
+
+# environment & secrets (never commit)
+.env
+.env.*
+!.env.example
+
+# local databases & storage
+.pgdata/
+data/
+db/*.db
+
+# logs
+dev.log
+server.log
+*.log
+.zscripts/*.log
+.zscripts/*.pid
+.zscripts/mini-service-*.log
+
+# misc
+.DS_Store
+*.pid
+tool-results/
+
+# sandbox environment artifacts (not product code)
+skills/
+.zscripts/
+examples/

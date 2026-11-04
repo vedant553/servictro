@@ -1,0 +1,128 @@
+# ServiceOS — local development stack (audit INFRA-03).
+#
+# Runs the FULL topology with production-shaped concerns: PostgreSQL 17 with
+# the three separated roles (migrate/app/worker), the ClamAV sidecar, the API,
+# the worker and the web console — plus a one-shot migration container.
+#
+#   docker compose -f docker-compose.dev.yml up --build
+#
+# The app respects the same env contract as production (see .env.example);
+# create ./mini-services/serviceos-api/.env from the example first, or rely
+# on the defaults below (development only).
+
+name: serviceos-dev
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: serviceos
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./scripts/db-bootstrap-roles.sql:/docker-entrypoint-initdb.d/10-roles.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d serviceos"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  clamd:
+    image: clamav/clamav:latest
+    # Dev default is the built-in signature scanner; enable this service and
+    # set MALWARE_SCANNER=clamav + CLAMD_HOST=clamd to exercise the real
+    # engine locally (production wiring — audit SEC-06).
+    profiles: ["clamav"]
+    ports:
+      - "3310:3310"
+    volumes:
+      - clamd:/var/lib/clamav
+
+  migrate:
+    build:
+      context: .
+      dockerfile: mini-services/serviceos-api/Dockerfile
+    # The runtime image has no bun — invoke the prisma CLI through node.
+    command: ["node", "node_modules/prisma/build/index.js", "migrate", "deploy"]
+    working_dir: /app/mini-services/serviceos-api
+    environment:
+      DATABASE_URL: postgresql://serviceos_app:serviceos_app_dev@postgres:5432/serviceos
+      DATABASE_MIGRATE_URL: postgresql://postgres:postgres@postgres:5432/serviceos
+      DATABASE_WORKER_URL: postgresql://serviceos_worker:serviceos_worker_dev@postgres:5432/serviceos
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build:
+      context: .
+      dockerfile: mini-services/serviceos-api/Dockerfile
+    environment:
+      NODE_ENV: development
+      PORT: 4000
+      DATABASE_URL: postgresql://serviceos_app:serviceos_app_dev@postgres:5432/serviceos
+      DATABASE_MIGRATE_URL: postgresql://postgres:postgres@postgres:5432/serviceos
+      DATABASE_WORKER_URL: postgresql://serviceos_worker:serviceos_worker_dev@postgres:5432/serviceos
+      JWT_ACCESS_SECRET: dev-access-secret-change-me
+      JWT_REFRESH_SECRET: dev-refresh-secret-change-me
+      APP_URL: http://localhost:3000
+      CORS_ORIGINS: http://localhost:3000
+      STORAGE_DRIVER: local
+      STORAGE_LOCAL_DIR: /data/uploads
+      MALWARE_SCANNER: signature
+      WORKER_POLL_MS: 3000
+    volumes:
+      - uploads:/data/uploads
+    ports:
+      - "4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  worker:
+    build:
+      context: .
+      dockerfile: mini-services/serviceos-api/Dockerfile
+    command: ["node", "dist/worker.js"]
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://serviceos_app:serviceos_app_dev@postgres:5432/serviceos
+      DATABASE_MIGRATE_URL: postgresql://postgres:postgres@postgres:5432/serviceos
+      DATABASE_WORKER_URL: postgresql://serviceos_worker:serviceos_worker_dev@postgres:5432/serviceos
+      JWT_ACCESS_SECRET: dev-access-secret-change-me
+      JWT_REFRESH_SECRET: dev-refresh-secret-change-me
+      APP_URL: http://localhost:3000
+      STORAGE_DRIVER: local
+      STORAGE_LOCAL_DIR: /data/uploads
+      MALWARE_SCANNER: signature
+      WORKER_POLL_MS: 3000
+    volumes:
+      - uploads:/data/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  uploads:
+  clamd:

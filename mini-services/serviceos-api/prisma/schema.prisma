@@ -1,0 +1,1124 @@
+// ServiceOS — PostgreSQL schema (Tech Spec §11 + Appendix A baseline).
+// Conventions: snake_case tables/columns via @map/@@map, UUID ids, tenant_id on
+// every tenant-owned row, composite FKs (tenant_id, child) -> (tenant_id, id),
+// timestamptz UTC, optimistic-concurrency `version` columns on aggregate roots.
+// CHECK constraints, partial indexes, RLS policies and role grants live in
+// reviewed SQL migrations (see prisma/migrations).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // app role (serviceos_app) — RLS applies
+  directUrl = env("DATABASE_MIGRATE_URL") // owner/migration role — RLS bypassed
+}
+
+// ---------------------------------------------------------------------------
+// Enums (lower_snake_case values in DB — Tech Spec §5.2)
+// ---------------------------------------------------------------------------
+
+enum TenantStatus {
+  active
+  suspended
+  closed
+}
+
+enum UserStatus {
+  active
+  disabled
+}
+
+enum MembershipStatus {
+  invited
+  active
+  suspended
+  revoked
+}
+
+enum InvitationStatus {
+  pending
+  accepted
+  expired
+  revoked
+}
+
+enum Role {
+  owner
+  admin
+  service_manager
+  coordinator
+  technician
+  contract_admin
+  auditor
+}
+
+enum CustomerStatus {
+  active
+  inactive
+  archived
+}
+
+enum SiteStatus {
+  active
+  inactive
+}
+
+enum AssetFamily {
+  lt_panel
+  ht_switchgear
+  vcb_panel
+  rmu
+  pcc
+  mcc
+  apfc
+  busduct
+  transformer
+  other
+}
+
+enum AssetStatus {
+  active
+  inactive
+  decommissioned
+}
+
+enum AssetDocumentType {
+  single_line_diagram
+  ga_drawing
+  test_certificate
+  om_manual
+  commissioning_report
+  warranty_certificate
+  nameplate_photo
+  other
+}
+
+enum AttachmentStatus {
+  pending
+  available
+  quarantined
+  deleted
+}
+
+enum ScanStatus {
+  pending
+  clean
+  infected
+  failed
+}
+
+enum RequestSource {
+  phone
+  email
+  portal
+  whatsapp
+  walk_in
+  internal
+}
+
+enum Severity {
+  low
+  medium
+  high
+  critical
+}
+
+enum RequestStatus {
+  new
+  triaged
+  accepted
+  needs_information
+  converted
+  rejected
+  closed
+}
+
+enum RequestCategory {
+  breakdown
+  tripping
+  overheating
+  abnormal_sound
+  preventive_visit
+  inspection
+  retrofit
+  spares
+  documentation
+  other
+}
+
+enum WorkOrderType {
+  breakdown
+  preventive
+  installation
+  commissioning
+  inspection
+  retrofit
+}
+
+enum WorkOrderStatus {
+  draft
+  ready
+  scheduled
+  in_progress
+  on_hold
+  pending_review
+  completed
+  closed
+  cancelled
+}
+
+enum Priority {
+  low
+  normal
+  high
+  urgent
+}
+
+enum AssignmentStatus {
+  offered
+  accepted
+  rejected
+  active
+  completed
+}
+
+enum WorkOrderEventType {
+  created
+  status_changed
+  assigned
+  unassigned
+  checklist_saved
+  observation_added
+  measurement_added
+  parts_recorded
+  report_generated
+  report_published
+  acknowledgement_captured
+  note_added
+}
+
+enum ChecklistOutcome {
+  pass
+  fail
+  not_applicable
+  not_checked
+  exception
+}
+
+enum AcknowledgementMethod {
+  signature
+  name_confirmation
+  not_signed
+}
+
+enum ContractType {
+  warranty
+  amc
+  service
+}
+
+enum ContractStatus {
+  draft
+  active
+  expired
+  terminated
+  renewed
+}
+
+enum CoverageType {
+  full
+  labour_only
+  inspection_only
+  parts_only
+}
+
+enum RenewalStatus {
+  not_due
+  due_soon
+  in_progress
+  renewed
+  lost
+}
+
+enum PlanStatus {
+  draft
+  active
+  paused
+  archived
+}
+
+enum PlannedVisitStatus {
+  planned
+  scheduled
+  completed
+  skipped
+  cancelled
+}
+
+enum ReportStatus {
+  draft
+  pending_review
+  approved
+  published
+  superseded
+}
+
+enum NotificationCategory {
+  request_created
+  request_assigned_triage
+  work_order_assigned
+  work_order_status
+  sla_at_risk
+  pm_due
+  amc_renewal
+  report_published
+  membership
+  system
+}
+
+enum DeliveryChannel {
+  in_app
+  email
+  whatsapp
+}
+
+enum DeliveryStatus {
+  pending
+  sent
+  failed
+  skipped_dev_no_provider
+}
+
+// ---------------------------------------------------------------------------
+// Identity & tenancy (platform scope — NO row-level security)
+// ---------------------------------------------------------------------------
+
+model Tenant {
+  id                 String       @id @default(uuid()) @db.Uuid
+  slug               String       @unique
+  name               String
+  legalName          String?      @map("legal_name")
+  timezone           String       @default("Asia/Kolkata")
+  locale             String       @default("en-IN")
+  currencyCode       String       @default("INR") @map("currency_code") @db.Char(3)
+  status             TenantStatus @default(active)
+  plan               String       @default("trial")
+  subscriptionStatus String       @default("trialing") @map("subscription_status")
+  settings           Json         @default("{}")
+  createdAt          DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  memberships        Membership[]
+  invitations        Invitation[]
+  numberSequences    NumberSequence[]
+  customers          CustomerAccount[]
+  attachments        Attachment[]
+  checklistTemplates ChecklistTemplate[]
+
+  // Plain tenant_id → tenants(id FKs for every other tenant-owned table are
+  // added in the reviewed SQL migration (see prisma/migrations), mirroring the
+  // engineering spec's DDL. Prisma relations are declared only where the
+  // object graph needs navigation.
+  @@map("tenants")
+}
+
+model User {
+  id              String     @id @default(uuid()) @db.Uuid
+  email           String     @unique
+  displayName     String     @map("display_name")
+  phone           String?
+  passwordHash    String?    @map("password_hash")
+  status          UserStatus @default(active)
+  identityIssuer  String?    @map("identity_issuer")
+  identitySubject String?    @map("identity_subject")
+  lastLoginAt     DateTime?  @map("last_login_at") @db.Timestamptz(6)
+  createdAt       DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  memberships   Membership[]
+  refreshTokens RefreshToken[]
+  assignments   WorkOrderAssignment[]
+
+  @@unique([identityIssuer, identitySubject])
+  @@map("users")
+}
+
+model Membership {
+  tenantId  String           @map("tenant_id") @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  role      Role
+  status    MembershipStatus @default(invited)
+  title     String?
+  skills    String[]         @default([])
+  invitedBy String?          @map("invited_by") @db.Uuid
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@id([tenantId, userId])
+  @@index([userId])
+  @@map("tenant_memberships")
+}
+
+model Invitation {
+  id               String           @id @default(uuid()) @db.Uuid
+  tenantId         String           @map("tenant_id") @db.Uuid
+  email            String
+  role             Role
+  tokenHash        String           @unique @map("token_hash")
+  status           InvitationStatus @default(pending)
+  invitedById      String?          @map("invited_by_id") @db.Uuid
+  expiresAt        DateTime         @map("expires_at") @db.Timestamptz(6)
+  acceptedAt       DateTime?        @map("accepted_at") @db.Timestamptz(6)
+  acceptedByUserId String?          @map("accepted_by_user_id") @db.Uuid
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId, status])
+  @@map("invitations")
+}
+
+model RefreshToken {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @map("user_id") @db.Uuid
+  tokenHash    String    @unique @map("token_hash")
+  expiresAt    DateTime  @map("expires_at") @db.Timestamptz(6)
+  revokedAt    DateTime? @map("revoked_at") @db.Timestamptz(6)
+  replacedById String?   @map("replaced_by_id") @db.Uuid
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model NumberSequence {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @default(dbgenerated("current_setting('app.tenant_id'::text, true)::uuid")) @map("tenant_id") @db.Uuid
+  key       String
+  nextValue Int      @default(1) @map("next_value")
+  prefix    String   @default("")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, key])
+  @@map("number_sequences")
+}
+
+// ---------------------------------------------------------------------------
+// CRM: customers, contacts, sites, assets  (RLS-protected)
+// ---------------------------------------------------------------------------
+
+model CustomerAccount {
+  id             String         @id @default(uuid()) @db.Uuid
+  tenantId       String         @default(dbgenerated("current_setting('app.tenant_id'::text, true)::uuid")) @map("tenant_id") @db.Uuid
+  accountCode    String         @map("account_code")
+  legalName      String         @map("legal_name")
+  segment        String?
+  status         CustomerStatus @default(active)
+  billingAddress Json           @default("{}") @map("billing_address")
+  notes          String?
+  version        Int            @default(1)
+  deletedAt      DateTime?      @map("deleted_at") @db.Timestamptz(6)
+  createdAt      DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant     Tenant            @relation(fields: [tenantId], references: [id])
+  contacts   CustomerContact[]
+  sites      Site[]
+  contracts  ServiceContract[]
+  requests   ServiceRequest[]
+  workOrders WorkOrder[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, accountCode])
+  @@index([tenantId, status, createdAt(sort: Desc)])
+  @@map("customer_accounts")
+}
+
+model CustomerContact {
+  id         String    @id @default(uuid()) @db.Uuid
+  tenantId   String    @default(dbgenerated("current_setting('app.tenant_id'::text, true)::uuid")) @map("tenant_id") @db.Uuid
+  customerId String    @map("customer_id") @db.Uuid
+  name       String
+  role       String?
+  email      String?
+  phone      String?
+  isPrimary  Boolean   @default(false) @map("is_primary")
+  notes      String?
+  version    Int       @default(1)
+  deletedAt  DateTime? @map("deleted_at") @db.Timestamptz(6)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  customer CustomerAccount @relation(fields: [tenantId, customerId], references: [tenantId, id])
+
+  @@unique([tenantId, id])
+  @@index([tenantId, customerId])
+  @@map("customer_contacts")
+}
+
+model Site {
+  id                 String     @id @default(uuid()) @db.Uuid
+  tenantId           String     @default(dbgenerated("current_setting('app.tenant_id'::text, true)::uuid")) @map("tenant_id") @db.Uuid
+  customerId         String     @map("customer_id") @db.Uuid
+  siteCode           String     @map("site_code")
+  name               String
+  status             SiteStatus @default(active)
+  address            Json       @default("{}")
+  latitude           Decimal?   @db.Decimal(9, 6)
+  longitude          Decimal?   @db.Decimal(9, 6)
+  timezone           String     @default("Asia/Kolkata")
+  accessInstructions String?    @map("access_instructions")
+  operatingHours     Json?      @map("operating_hours")
+  version            Int        @default(1)
+  deletedAt          DateTime?  @map("deleted_at") @db.Timestamptz(6)
+  createdAt          DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  customer   CustomerAccount  @relation(fields: [tenantId, customerId], references: [tenantId, id])
+  assets     Asset[]
+  requests   ServiceRequest[]
+  workOrders WorkOrder[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, siteCode])
+  @@index([tenantId, customerId])
+  @@map("sites")
+}
+
+model Asset {
+  id                         String      @id @default(uuid()) @db.Uuid
+  tenantId                   String      @default(dbgenerated("current_setting('app.tenant_id'::text, true)::uuid")) @map("tenant_id") @db.Uuid
+  siteId                     String      @map("site_id") @db.Uuid
+  parentAssetId              String?     @map("parent_asset_id") @db.Uuid
+  assetCode                  String      @map("asset_code")
+  serialNumber               String?     @map("serial_number")
+  assetFamily                AssetFamily @map("asset_family")
+  manufacturer               String?
+  model                      String?
+  commissioningDate          DateTime?   @map("commissioning_date") @db.Date
+  specificationSchemaVersion Int         @default(1) @map("specification_schema_version")
+  specification              Json        @default("{}")
+  status                     AssetStatus @default(active)
+  notes                      String?
+  version                    Int         @default(1)
+  deletedAt                  DateTime?   @map("deleted_at") @db.Timestamptz(6)
+  createdAt                  DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                  DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  parent          Asset?                 @relation("AssetHierarchy", fields: [tenantId, parentAssetId], references: [tenantId, id])
+  children        Asset[]                @relation("AssetHierarchy")
+  site            Site                   @relation(fields: [tenantId, siteId], references: [tenantId, id])
+  documents       AssetDocument[]
+  contractAssets  ContractAsset[]
+  requests        ServiceRequest[]
+  workOrders      WorkOrder[]
+  measurements    ServiceMeasurement[]
+  plannedVisits   PlannedVisit[]
+  planMemberships MaintenancePlanAsset[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, assetCode])
+  @@index([tenantId, siteId])
+  @@index([tenantId, assetFamily])
+  @@index([tenantId, serialNumber])
+  @@map("assets")
+}
+
+model Attachment {
+  id             String           @id @default(uuid()) @db.Uuid
+  tenantId       String           @default(dbgenerated("current_setting('app.tenant_id'::text, true)::uuid")) @map("tenant_id") @db.Uuid
+  objectKey      String           @unique @map("object_key")
+  originalName   String           @map("original_name")
+  contentType    String           @map("content_type")
+  sizeBytes      BigInt           @map("size_bytes")
+  checksumSha256 String           @map("checksum_sha256")
+  scanStatus     ScanStatus       @default(pending) @map("scan_status")
+  status         AttachmentStatus @default(pending)
+  ownerType      String?          @map("owner_type")
+  ownerId        String?          @map("owner_id") @db.Uuid
+  uploadedById   String?          @map("uploaded_by_id") @db.Uuid
+  createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  tenant                  Tenant          @relation(fields: [tenantId], references: [id])
+  assetDocuments          AssetDocument[]
+  serviceReportsGenerated ServiceReport[] @relation("ReportGeneratedAttachment")
+  serviceReportsSigned    ServiceReport[] @relation("ReportSignatureAttachment")
+
+  @@unique([tenantId, id])
+  @@index([tenantId, ownerType, ownerId])
+  @@map("attachments")
+}
+
+model AssetDocument {
+  id           String            @id @default(uuid()) @db.Uuid
+  tenantId     String            @default(dbgenerated("current_setting('app.tenant_id'::text, true)::uuid")) @map("tenant_id") @db.Uuid
+  assetId      String            @map("asset_id") @db.Uuid
+  attachmentId String            @map("attachment_id") @db.Uuid
+  documentType AssetDocumentType @map("document_type")
+  title        String?
+  revision     String?
+  notes        String?
+  uploadedById String?           @map("uploaded_by_id") @db.Uuid
+  createdAt    DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime          @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  asset      Asset      @relation(fields: [tenantId, assetId], references: [tenantId, id])
+  attachment Attachment @relation(fields: [tenantId, attachmentId], references: [tenantId, id])
+
+  @@unique([tenantId, id])
+  @@index([tenantId, assetId])
+  @@map("asset_documents")
+}
+
+// ---------------------------------------------------------------------------
+// Contracts & maintenance
+// ---------------------------------------------------------------------------
+
+model ServiceContract {
+  id                      String         @id @default(uuid()) @db.Uuid
+  tenantId                String         @default(dbgenerated("current_setting('app.tenant_id'::text, true)::uuid")) @map("tenant_id") @db.Uuid
+  customerId              String         @map("customer_id") @db.Uuid
+  contractNo              String         @map("contract_no")
+  contractType            ContractType   @map("contract_type")
+  status                  ContractStatus @default(draft)
+  startDate               DateTime       @map("start_date") @db.Date
+  endDate                 DateTime       @map("end_date") @db.Date
+  currencyCode            String         @default("INR") @map("currency_code") @db.Char(3)
+  amountMinor             BigInt?        @map("amount_minor")
+  responseTargetMinutes   Int?           @map("response_target_minutes")
+  resolutionTargetMinutes Int?           @map("resolution_target_minutes")
+  includedVisitsPerYear   Int?           @map("included_visits_per_year")
+  terms                   Json           @default("{}")
+  renewalStatus           RenewalStatus  @default(not_due) @map("renewal_status")
+  renewalNotes            String?        @map("renewal_notes")
+  version                 Int            @default(1)
+  deletedAt               DateTime?      @map("deleted_at") @db.Timestamptz(6)
+  createdAt               DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt               DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  customer         CustomerAccount   @relation(fields: [tenantId, customerId], references: [tenantId, id])
+  assets           ContractAsset[]
+  maintenancePlans MaintenancePlan[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, contractNo])
+  @@index([tenantId, status, endDate])
+  @@map("service_contracts")
+}
+
+model ContractAsset {
+  tenantId       String       @default(dbgenerated("current_setting('app.tenant_id'::text, true)::uuid")) @map("tenant_id") @db.Uuid
+  contractId     String       @map("contract_id") @db.Uuid
+  assetId        String       @map("asset_id") @db.Uuid
+  coverageType   CoverageType @default(full) @map("coverage_type")
+  includedVisits Int?         @map("included_visits")
+  notes          String?
+  createdAt      DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  contract ServiceContract @relation(fields: [tenantId, contractId], references: [tenantId, id])
+  asset    Asset           @relation(fields: [tenantId, assetId], references: [tenantId, id])
+
+  @@id([tenantId, contractId, assetId])
+  @@map("contract_assets")
+}
+
+model MaintenancePlan {
+  id                  String      @id @default(uuid()) @db.Uuid
+  tenantId            String      @default(dbgenerated("current_setting('app.tenant_id'::text, true)::uuid")) @map("tenant_id") @db.Uuid
+  contractId          String?     @map("contract_id") @db.Uuid
+  planCode            String      @map("plan_code")
+  name                String
+  assetFamily         AssetFamily @map("asset_family")
+  recurrence          Json
+  timezone            String      @default("Asia/Kolkata")
+  startDate           DateTime    @map("start_date") @db.Date
+  endDate             DateTime?   @map("end_date") @db.Date
+  horizonDays         Int         @default(90) @map("horizon_days")
+  leadDays            Int         @default(14) @map("lead_days")
+  checklistTemplateId String?     @map("checklist_template_id") @db.Uuid
+  status              PlanStatus  @default(draft)
+  version             Int         @default(1)
+  createdAt           DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  contract          ServiceContract?       @relation(fields: [tenantId, contractId], references: [tenantId, id])
+  checklistTemplate ChecklistTemplate?     @relation(fields: [tenantId, checklistTemplateId], references: [tenantId, id])
+  assets            MaintenancePlanAsset[]
+  plannedVisits     PlannedVisit[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, planCode])
+  @@map("maintenance_plans")
+}
+
+model MaintenancePlanAsset {
+  tenantId  String   @default(dbgenerated("current_setting('app.tenant_id'::text, true)::uuid")) @map("tenant_id") @db.Uuid
+  planId    String   @map("plan_id") @db.Uuid
+  assetId   String   @map("asset_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  plan  MaintenancePlan @relation(fields: [tenantId, planId], references: [tenantId, id])
+  asset Asset           @relation(fields: [tenantId, assetId], references: [tenantId, id])
+
+  @@id([tenantId, planId, assetId])
+  @@map("maintenance_plan_assets")
+}
+
+model PlannedVisit {
+  id            String             @id @default(uuid()) @db.Uuid
+  tenantId      String             @default(dbgenerated("current_setting('app.tenant_id'::text, true)::uuid")) @map("tenant_id") @db.Uuid
+  planId        String             @map("plan_id") @db.Uuid
+  assetId       String             @map("asset_id") @db.Uuid
+  dueAt         DateTime           @map("due_at") @db.Timestamptz(6)
+  status        PlannedVisitStatus @default(planned)
+  workOrderId   String?            @map("work_order_id") @db.Uuid
+  generationKey String             @unique @map("generation_key")
+  completedAt   DateTime?          @map("completed_at") @db.Timestamptz(6)
+  createdAt     DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  plan      MaintenancePlan @relation(fields: [tenantId, planId], references: [tenantId, id])
+  asset     Asset           @relation(fields: [tenantId, assetId], references: [tenantId, id])
+  workOrder WorkOrder?      @relation(fields: [tenantId, workOrderId], references: [tenantId, id])
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, workOrderId])
+  @@index([tenantId, status, dueAt])
+  @@map("planned_visits")
+}
+
+// ---------------------------------------------------------------------------
+// Service desk & work management
+// ---------------------------------------------------------------------------
+
+model ServiceRequest {
+  id               String          @id @default(uuid()) @db.Uuid
+  tenantId         String          @default(dbgenerated("current_setting('app.tenant_id'::text, true)::uuid")) @map("tenant_id") @db.Uuid
+  requestNo        String          @map("request_no")
+  customerId       String          @map("customer_id") @db.Uuid
+  siteId           String          @map("site_id") @db.Uuid
+  assetId          String?         @map("asset_id") @db.Uuid
+  contactId        String?         @map("contact_id") @db.Uuid
+  source           RequestSource
+  category         RequestCategory @default(other)
+  subject          String
+  description      String
+  severity         Severity        @default(medium)
+  status           RequestStatus   @default(new)
+  preferredVisitAt DateTime?       @map("preferred_visit_at") @db.Timestamptz(6)
+  firstResponseAt  DateTime?       @map("first_response_at") @db.Timestamptz(6)
+  triagedAt        DateTime?       @map("triaged_at") @db.Timestamptz(6)
+  triagedById      String?         @map("triaged_by_id") @db.Uuid
+  acceptedAt       DateTime?       @map("accepted_at") @db.Timestamptz(6)
+  rejectedReason   String?         @map("rejected_reason")
+  convertedAt      DateTime?       @map("converted_at") @db.Timestamptz(6)
+  closedAt         DateTime?       @map("closed_at") @db.Timestamptz(6)
+  createdById      String          @map("created_by_id") @db.Uuid
+  version          Int             @default(1)
+  createdAt        DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  customer   CustomerAccount @relation(fields: [tenantId, customerId], references: [tenantId, id])
+  site       Site            @relation(fields: [tenantId, siteId], references: [tenantId, id])
+  asset      Asset?          @relation(fields: [tenantId, assetId], references: [tenantId, id])
+  workOrders WorkOrder[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, requestNo])
+  @@index([tenantId, status, createdAt(sort: Desc)])
+  @@index([tenantId, customerId])
+  @@index([tenantId, assetId])
+  @@map("service_requests")
+}
+
+model WorkOrder {
+  id                         String          @id @default(uuid()) @db.Uuid
+  tenantId                   String          @default(dbgenerated("current_setting('app.tenant_id'::text, true)::uuid")) @map("tenant_id") @db.Uuid
+  workOrderNo                String          @map("work_order_no")
+  requestId                  String?         @map("request_id") @db.Uuid
+  customerId                 String          @map("customer_id") @db.Uuid
+  siteId                     String          @map("site_id") @db.Uuid
+  assetId                    String?         @map("asset_id") @db.Uuid
+  title                      String
+  description                String?
+  type                       WorkOrderType   @default(breakdown)
+  status                     WorkOrderStatus @default(draft)
+  priority                   Priority        @default(normal)
+  scheduledStartAt           DateTime?       @map("scheduled_start_at") @db.Timestamptz(6)
+  scheduledEndAt             DateTime?       @map("scheduled_end_at") @db.Timestamptz(6)
+  responseDueAt              DateTime?       @map("response_due_at") @db.Timestamptz(6)
+  resolutionDueAt            DateTime?       @map("resolution_due_at") @db.Timestamptz(6)
+  slaPolicy                  Json?
+  checklistTemplateVersionId String?         @map("checklist_template_version_id") @db.Uuid
+  requiredSkills             String[]        @default([]) @map("required_skills")
+  completionSummary          String?         @map("completion_summary")
+  cancelledReason            String?         @map("cancelled_reason")
+  completedAt                DateTime?       @map("completed_at") @db.Timestamptz(6)
+  closedAt                   DateTime?       @map("closed_at") @db.Timestamptz(6)
+  version                    Int             @default(1)
+  createdById                String?         @map("created_by_id") @db.Uuid
+  createdAt                  DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                  DateTime        @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  request                  ServiceRequest?           @relation(fields: [tenantId, requestId], references: [tenantId, id])
+  customer                 CustomerAccount           @relation(fields: [tenantId, customerId], references: [tenantId, id])
+  site                     Site                      @relation(fields: [tenantId, siteId], references: [tenantId, id])
+  asset                    Asset?                    @relation(fields: [tenantId, assetId], references: [tenantId, id])
+  checklistTemplateVersion ChecklistTemplateVersion? @relation(fields: [tenantId, checklistTemplateVersionId], references: [tenantId, id])
+  assignments              WorkOrderAssignment[]
+  events                   WorkOrderEvent[]
+  checklistResults         ChecklistResult[]
+  measurements             ServiceMeasurement[]
+  observations             ServiceObservation[]
+  partsUsage               PartUsage[]
+  serviceReports           ServiceReport[]
+  plannedVisit             PlannedVisit?
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, workOrderNo])
+  @@index([tenantId, status, createdAt(sort: Desc)])
+  @@index([tenantId, resolutionDueAt])
+  @@index([tenantId, customerId])
+  @@index([tenantId, siteId])
+  @@index([tenantId, assetId])
+  @@map("work_orders")
+}
+
+model WorkOrderAssignment {
+  id             String           @id @default(uuid()) @db.Uuid
+  tenantId       String           @default(dbgenerated("current_setting('app.tenant_id'::text, true)::uuid")) @map("tenant_id") @db.Uuid
+  workOrderId    String           @map("work_order_id") @db.Uuid
+  userId         String           @map("user_id") @db.Uuid
+  assignmentRole String           @default("technician") @map("assignment_role")
+  status         AssignmentStatus @default(offered)
+  offeredAt      DateTime         @default(now()) @map("offered_at") @db.Timestamptz(6)
+  acceptedAt     DateTime?        @map("accepted_at") @db.Timestamptz(6)
+  completedAt    DateTime?        @map("completed_at") @db.Timestamptz(6)
+  createdAt      DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workOrder WorkOrder @relation(fields: [tenantId, workOrderId], references: [tenantId, id])
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@unique([tenantId, workOrderId, userId])
+  @@index([tenantId, userId, status])
+  @@map("work_order_assignments")
+}
+
+model WorkOrderEvent {
+  id          String             @id @default(uuid()) @db.Uuid
+  tenantId    String             @default(dbgenerated("current_setting('app.tenant_id'::text, true)::uuid")) @map("tenant_id") @db.Uuid
+  workOrderId String             @map("work_order_id") @db.Uuid
+  eventType   WorkOrderEventType @map("event_type")
+  fromStatus  WorkOrderStatus?   @map("from_status")
+  toStatus    WorkOrderStatus?   @map("to_status")
+  actorUserId String?            @map("actor_user_id") @db.Uuid
+  reason      String?
+  metadata    Json               @default("{}")
+  occurredAt  DateTime           @default(now()) @map("occurred_at") @db.Timestamptz(6)
+
+  workOrder WorkOrder @relation(fields: [tenantId, workOrderId], references: [tenantId, id])
+
+  @@unique([tenantId, id])
+  @@index([tenantId, workOrderId, occurredAt(sort: Desc)])
+  @@map("work_order_events")
+}
+
+model ChecklistTemplate {
+  id            String      @id @default(uuid()) @db.Uuid
+  tenantId      String      @default(dbgenerated("current_setting('app.tenant_id'::text, true)::uuid")) @map("tenant_id") @db.Uuid
+  templateKey   String      @map("template_key")
+  name          String
+  assetFamily   AssetFamily @map("asset_family")
+  activeVersion Int         @default(1) @map("active_version")
+  status        String      @default("active")
+  createdAt     DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  versions         ChecklistTemplateVersion[]
+  maintenancePlans MaintenancePlan[]
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, templateKey])
+  @@map("checklist_templates")
+}
+
+model ChecklistTemplateVersion {
+  id           String    @id @default(uuid()) @db.Uuid
+  tenantId     String    @default(dbgenerated("current_setting('app.tenant_id'::text, true)::uuid")) @map("tenant_id") @db.Uuid
+  templateId   String    @map("template_id") @db.Uuid
+  version      Int
+  definition   Json
+  approvedById String?   @map("approved_by_id") @db.Uuid
+  approvedAt   DateTime? @map("approved_at") @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  template   ChecklistTemplate @relation(fields: [tenantId, templateId], references: [tenantId, id])
+  workOrders WorkOrder[]
+  results    ChecklistResult[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, templateId, version])
+  @@map("checklist_template_versions")
+}
+
+model ChecklistResult {
+  id                String           @id @default(uuid()) @db.Uuid
+  tenantId          String           @default(dbgenerated("current_setting('app.tenant_id'::text, true)::uuid")) @map("tenant_id") @db.Uuid
+  workOrderId       String           @map("work_order_id") @db.Uuid
+  templateVersionId String           @map("template_version_id") @db.Uuid
+  itemKey           String           @map("item_key")
+  outcome           ChecklistOutcome @default(not_checked)
+  valueNumeric      Decimal?         @map("value_numeric") @db.Decimal(18, 4)
+  valueText         String?          @map("value_text")
+  unit              String?
+  note              String?
+  exceptionReason   String?          @map("exception_reason")
+  performedById     String?          @map("performed_by_id") @db.Uuid
+  observedAt        DateTime?        @map("observed_at") @db.Timestamptz(6)
+  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workOrder       WorkOrder                @relation(fields: [tenantId, workOrderId], references: [tenantId, id])
+  templateVersion ChecklistTemplateVersion @relation(fields: [tenantId, templateVersionId], references: [tenantId, id])
+
+  @@unique([tenantId, workOrderId, templateVersionId, itemKey])
+  @@map("work_order_checklist_results")
+}
+
+model ServiceMeasurement {
+  id                   String    @id @default(uuid()) @db.Uuid
+  tenantId             String    @default(dbgenerated("current_setting('app.tenant_id'::text, true)::uuid")) @map("tenant_id") @db.Uuid
+  workOrderId          String    @map("work_order_id") @db.Uuid
+  assetId              String?   @map("asset_id") @db.Uuid
+  measurementKey       String    @map("measurement_key")
+  measuredValue        Decimal   @map("measured_value") @db.Decimal(18, 4)
+  unit                 String
+  phase                String?
+  instrumentId         String?   @map("instrument_id")
+  calibrationReference String?   @map("calibration_reference")
+  note                 String?
+  deviceObservedAt     DateTime? @map("device_observed_at") @db.Timestamptz(6)
+  serverReceivedAt     DateTime  @default(now()) @map("server_received_at") @db.Timestamptz(6)
+  recordedById         String?   @map("recorded_by_id") @db.Uuid
+
+  workOrder WorkOrder @relation(fields: [tenantId, workOrderId], references: [tenantId, id])
+  asset     Asset?    @relation(fields: [tenantId, assetId], references: [tenantId, id])
+
+  @@unique([tenantId, id])
+  @@index([tenantId, workOrderId])
+  @@index([tenantId, assetId, serverReceivedAt(sort: Desc)])
+  @@map("service_measurements")
+}
+
+model ServiceObservation {
+  id               String    @id @default(uuid()) @db.Uuid
+  tenantId         String    @default(dbgenerated("current_setting('app.tenant_id'::text, true)::uuid")) @map("tenant_id") @db.Uuid
+  workOrderId      String    @map("work_order_id") @db.Uuid
+  kind             String    @default("observation")
+  text             String
+  deviceObservedAt DateTime? @map("device_observed_at") @db.Timestamptz(6)
+  recordedById     String?   @map("recorded_by_id") @db.Uuid
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  workOrder WorkOrder @relation(fields: [tenantId, workOrderId], references: [tenantId, id])
+
+  @@unique([tenantId, id])
+  @@index([tenantId, workOrderId])
+  @@map("service_observations")
+}
+
+model PartUsage {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @default(dbgenerated("current_setting('app.tenant_id'::text, true)::uuid")) @map("tenant_id") @db.Uuid
+  workOrderId   String   @map("work_order_id") @db.Uuid
+  partCode      String   @map("part_code")
+  description   String?
+  quantity      Decimal  @db.Decimal(12, 3)
+  unit          String   @default("nos")
+  serialOrBatch String?  @map("serial_or_batch")
+  note          String?
+  recordedById  String?  @map("recorded_by_id") @db.Uuid
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  workOrder WorkOrder @relation(fields: [tenantId, workOrderId], references: [tenantId, id])
+
+  @@unique([tenantId, id])
+  @@index([tenantId, workOrderId])
+  @@map("parts_usage")
+}
+
+model ServiceReport {
+  id                    String                 @id @default(uuid()) @db.Uuid
+  tenantId              String                 @default(dbgenerated("current_setting('app.tenant_id'::text, true)::uuid")) @map("tenant_id") @db.Uuid
+  workOrderId           String                 @map("work_order_id") @db.Uuid
+  reportVersion         Int                    @default(1) @map("report_version")
+  status                ReportStatus           @default(draft)
+  templateVersion       String                 @default("v1") @map("template_version")
+  summary               String?
+  generatedAttachmentId String?                @map("generated_attachment_id") @db.Uuid
+  approvedById          String?                @map("approved_by_id") @db.Uuid
+  approvedAt            DateTime?              @map("approved_at") @db.Timestamptz(6)
+  publishedAt           DateTime?              @map("published_at") @db.Timestamptz(6)
+  supersedesReportId    String?                @map("supersedes_report_id") @db.Uuid
+  acknowledgedByName    String?                @map("acknowledged_by_name")
+  acknowledgedByRole    String?                @map("acknowledged_by_role")
+  acknowledgedAt        DateTime?              @map("acknowledged_at") @db.Timestamptz(6)
+  acknowledgementMethod AcknowledgementMethod? @map("acknowledgement_method")
+  signatureAttachmentId String?                @map("signature_attachment_id") @db.Uuid
+  notSignedReason       String?                @map("not_signed_reason")
+  createdAt             DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  workOrder           WorkOrder   @relation(fields: [tenantId, workOrderId], references: [tenantId, id])
+  generatedAttachment Attachment? @relation("ReportGeneratedAttachment", fields: [tenantId, generatedAttachmentId], references: [tenantId, id])
+  signatureAttachment Attachment? @relation("ReportSignatureAttachment", fields: [tenantId, signatureAttachmentId], references: [tenantId, id])
+
+  @@unique([tenantId, workOrderId, reportVersion])
+  @@index([tenantId, status])
+  @@map("service_reports")
+}
+
+// ---------------------------------------------------------------------------
+// Notifications, audit, outbox, idempotency, mobile sync (RLS-protected)
+// ---------------------------------------------------------------------------
+
+model Notification {
+  id         String               @id @default(uuid()) @db.Uuid
+  tenantId   String               @default(dbgenerated("current_setting('app.tenant_id'::text, true)::uuid")) @map("tenant_id") @db.Uuid
+  userId     String               @map("user_id") @db.Uuid
+  category   NotificationCategory
+  title      String
+  body       String
+  entityType String?              @map("entity_type")
+  entityId   String?              @map("entity_id") @db.Uuid
+  link       String?
+  /** Stable deduplication key (e.g. amc_renewal:{contractId}:{days}) — unique per user; prevents repeat reminders. */
+  dedupKey   String?              @map("dedup_key")
+  readAt     DateTime?            @map("read_at") @db.Timestamptz(6)
+  createdAt  DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  deliveries NotificationDelivery[]
+
+  @@unique([tenantId, id])
+  @@index([tenantId, userId, readAt])
+  @@index([tenantId, userId, dedupKey])
+  @@map("notifications")
+}
+
+model NotificationDelivery {
+  id                String          @id @default(uuid()) @db.Uuid
+  tenantId          String          @default(dbgenerated("current_setting('app.tenant_id'::text, true)::uuid")) @map("tenant_id") @db.Uuid
+  notificationId    String          @map("notification_id") @db.Uuid
+  channel           DeliveryChannel
+  status            DeliveryStatus  @default(pending)
+  providerMessageId String?         @map("provider_message_id")
+  error             String?
+  attemptedAt       DateTime        @default(now()) @map("attempted_at") @db.Timestamptz(6)
+
+  notification Notification @relation(fields: [tenantId, notificationId], references: [tenantId, id])
+
+  @@index([tenantId, notificationId])
+  @@map("notification_deliveries")
+}
+
+model AuditEvent {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @default(dbgenerated("current_setting('app.tenant_id'::text, true)::uuid")) @map("tenant_id") @db.Uuid
+  actorUserId  String?  @map("actor_user_id") @db.Uuid
+  action       String
+  resourceType String   @map("resource_type")
+  resourceId   String   @map("resource_id") @db.Uuid
+  reason       String?
+  requestId    String?  @map("request_id")
+  ipHash       String?  @map("ip_hash")
+  metadata     Json     @default("{}")
+  occurredAt   DateTime @default(now()) @map("occurred_at") @db.Timestamptz(6)
+
+  @@unique([tenantId, id])
+  @@index([tenantId, resourceType, resourceId, occurredAt(sort: Desc)])
+  @@index([tenantId, actorUserId, occurredAt(sort: Desc)])
+  @@map("audit_events")
+}
+
+model OutboxEvent {
+  id            String    @id @default(uuid()) @db.Uuid
+  tenantId      String    @default(dbgenerated("current_setting('app.tenant_id'::text, true)::uuid")) @map("tenant_id") @db.Uuid
+  eventType     String    @map("event_type")
+  aggregateType String    @map("aggregate_type")
+  aggregateId   String    @map("aggregate_id") @db.Uuid
+  payload       Json      @default("{}")
+  publishedAt   DateTime? @map("published_at") @db.Timestamptz(6)
+  attempts      Int       @default(0)
+  lastError     String?   @map("last_error")
+  /** Claim lease (DATA-06): SKIP LOCKED claim + expiry lease for multi-instance workers. */
+  lockedUntil   DateTime? @map("locked_until") @db.Timestamptz(6)
+  lockedBy      String?   @map("locked_by")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([tenantId, id])
+  @@index([publishedAt, createdAt])
+  @@index([publishedAt, attempts, lockedUntil])
+  @@map("outbox_events")
+}
+
+model IdempotencyKey {
+  tenantId       String   @default(dbgenerated("current_setting('app.tenant_id'::text, true)::uuid")) @map("tenant_id") @db.Uuid
+  key            String
+  requestHash    String   @map("request_hash")
+  responseStatus Int?     @map("response_status")
+  responseBody   Json?    @map("response_body")
+  expiresAt      DateTime @map("expires_at") @db.Timestamptz(6)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@id([tenantId, key])
+  @@map("idempotency_keys")
+}
+
+model MobileSyncOperation {
+  tenantId        String   @default(dbgenerated("current_setting('app.tenant_id'::text, true)::uuid")) @map("tenant_id") @db.Uuid
+  operationId     String   @map("operation_id") @db.Uuid
+  deviceId        String   @map("device_id") @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  entityType      String   @map("entity_type")
+  entityId        String   @map("entity_id") @db.Uuid
+  result          String
+  serverVersion   Int?     @map("server_version")
+  responsePayload Json?    @map("response_payload")
+  receivedAt      DateTime @default(now()) @map("received_at") @db.Timestamptz(6)
+
+  @@id([tenantId, operationId])
+  @@index([tenantId, userId])
+  @@index([userId, receivedAt])
+  @@map("mobile_sync_operations")
+}
+
+// ---------------------------------------------------------------------------
+// Worker heartbeat (monitoring — audit INFRA-07). Platform-scope table (no
+// tenant_id, no RLS): a single singleton row the worker updates and
+// /health/worker reports. Written by the least-privilege worker role.
+// ---------------------------------------------------------------------------
+model WorkerHeartbeat {
+  id                String   @id @default("singleton")
+  workerId          String   @map("worker_id")
+  lastOutboxPollAt  DateTime? @map("last_outbox_poll_at") @db.Timestamptz(6)
+  lastPmPassAt      DateTime? @map("last_pm_pass_at") @db.Timestamptz(6)
+  lastRenewalPassAt DateTime? @map("last_renewal_pass_at") @db.Timestamptz(6)
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  @@map("worker_heartbeats")
+}

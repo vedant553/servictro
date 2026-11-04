@@ -1,0 +1,153 @@
+# ServiceOS CI (audit INFRA-05): typecheck + unit + integration tests over a
+# real PostgreSQL service container, then production builds for API and web.
+# Deployment (push to ECR + terraform apply) is a separate promotion job kept
+# manual-gated — see the comments at the bottom.
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  api:
+    name: API — typecheck, tests, build
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: serviceos_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      TEST_PG_HOST: 127.0.0.1
+      TEST_PG_PORT: "5432"
+      JWT_ACCESS_SECRET: ci-access-secret
+      JWT_REFRESH_SECRET: ci-refresh-secret
+      APP_URL: http://localhost:3000
+      STORAGE_DRIVER: local
+      MALWARE_SCANNER: signature
+      RATE_LIMITING: "on"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # The app role must exist before the API connects (the worker role is
+      # created NOLOGIN by the first migration; test global-setup enables its
+      # LOGIN). Password matches test/jest.setup.ts — ephemeral CI database.
+      - name: Provision database roles
+        working-directory: mini-services/serviceos-api
+        run: |
+          node -e '
+          const { Client } = require("pg");
+          (async () => {
+            const c = new Client({ connectionString: "postgresql://postgres:postgres@127.0.0.1:5432/serviceos_test" });
+            await c.connect();
+            await c.query("CREATE ROLE serviceos_app LOGIN PASSWORD \'serviceos_app_dev\' NOSUPERUSER NOCREATEDB NOCREATEROLE");
+            await c.end();
+          })();'
+
+      - name: Typecheck
+        working-directory: mini-services/serviceos-api
+        run: bunx tsc --noEmit
+
+      - name: Unit tests
+        working-directory: mini-services/serviceos-api
+        run: bun run test:unit
+
+      - name: Integration tests (real PostgreSQL, RLS active)
+        working-directory: mini-services/serviceos-api
+        run: bun run test
+
+      - name: Production build
+        working-directory: mini-services/serviceos-api
+        run: bunx tsc -p tsconfig.build.json
+
+  web:
+    name: Web console — typecheck, lint, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck
+        run: bunx tsc --noEmit
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Production build (standalone)
+        run: bun run build
+
+  web-unit:
+    name: Web offline-store unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: bun test (offline queue partitioning + purge logic)
+        run: bun test src/lib/offline-store.test.ts
+
+  # ---------------------------------------------------------------------------
+  # Deployment (manual promotion — uncomment and wire secrets to enable):
+  #
+  # deploy:
+  #   needs: [api, web, web-unit]
+  #   if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+  #   environment: production
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: aws-actions/configure-aws-credentials@v4
+  #       with:
+  #         role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+  #         aws-region: ap-south-1
+  #     - name: Build & push API image
+  #       run: |
+  #         aws ecr get-login-password | docker login --username AWS --password-stdin $ACCOUNT.dkr.ecr.$REGION.amazonaws.com
+  #         docker build -f mini-services/serviceos-api/Dockerfile -t $API_ECR:sha-${GITHUB_SHA::7} .
+  #         docker push $API_ECR:sha-${GITHUB_SHA::7}
+  #     - name: Build & push web image
+  #       run: |
+  #         docker build -f Dockerfile.web --build-arg NEXT_PUBLIC_APP_URL=$APP_URL -t $WEB_ECR:sha-${GITHUB_SHA::7} .
+  #         docker push $WEB_ECR:sha-${GITHUB_SHA::7}
+  #     - name: Run migrations (serviceos_migrate credentials only)
+  #       working-directory: mini-services/serviceos-api
+  #       run: |
+  #         export DATABASE_MIGRATE_URL="$(aws secretsmanager get-secret-value --secret-id serviceos/prod/db/migrate-url --query SecretString --output text)"
+  #         bunx prisma migrate deploy
+  #     - name: Terraform apply (services pick up the new images)
+  #       working-directory: infra/terraform
+  #       run: |
+  #         terraform init -backend-config=backend.hcl
+  #         terraform apply -auto-approve -var="api_image=$API_ECR:sha-${GITHUB_SHA::7}" -var="web_image=$WEB_ECR:sha-${GITHUB_SHA::7}" -var="app_domain=$APP_DOMAIN" -var="api_domain=$API_DOMAIN"

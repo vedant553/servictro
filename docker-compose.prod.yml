@@ -1,0 +1,102 @@
+# ServiceOS — production application stack (audit INFRA-02/03/06).
+#
+# Shape mirrors the Terraform/ECS topology for smaller deployments
+# (single host): Caddy (TLS) → web + api, worker, PostgreSQL, ClamAV.
+# File storage is S3 (STORAGE_DRIVER=s3 — local is REFUSED in production).
+#
+# Prerequisites:
+#   - .env.production with real secrets (never committed)
+#   - scripts/db-bootstrap-roles.sql applied to the database once
+#   - DNS A/AAAA record pointing at this host
+#
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d
+
+name: serviceos-prod
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile.prod:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      web:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+      args:
+        NEXT_PUBLIC_APP_URL: ${PUBLIC_APP_URL}
+    environment:
+      NODE_ENV: production
+    expose:
+      - "3000"
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: mini-services/serviceos-api/Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_MIGRATE_URL: ${DATABASE_MIGRATE_URL}
+      DATABASE_WORKER_URL: ${DATABASE_WORKER_URL}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      APP_URL: ${PUBLIC_APP_URL}
+      CORS_ORIGINS: ${PUBLIC_APP_URL}
+      # Production storage contract (audit SEC-07): S3 or boot fails.
+      STORAGE_DRIVER: s3
+      STORAGE_S3_BUCKET: ${STORAGE_S3_BUCKET}
+      STORAGE_S3_REGION: ${STORAGE_S3_REGION}
+      STORAGE_S3_KMS_KEY_ID: ${STORAGE_S3_KMS_KEY_ID:-}
+      MALWARE_SCANNER: clamav
+      CLAMD_HOST: clamd
+      CLAMD_PORT: 3310
+      TRUST_PROXY: private
+    expose:
+      - "4000"
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: .
+      dockerfile: mini-services/serviceos-api/Dockerfile
+    command: ["node", "dist/worker.js"]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_MIGRATE_URL: ${DATABASE_MIGRATE_URL}
+      DATABASE_WORKER_URL: ${DATABASE_WORKER_URL}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      APP_URL: ${PUBLIC_APP_URL}
+      STORAGE_DRIVER: s3
+      STORAGE_S3_BUCKET: ${STORAGE_S3_BUCKET}
+      STORAGE_S3_REGION: ${STORAGE_S3_REGION}
+      STORAGE_S3_KMS_KEY_ID: ${STORAGE_S3_KMS_KEY_ID:-}
+      MALWARE_SCANNER: signature
+      WORKER_POLL_MS: 3000
+    restart: unless-stopped
+
+  clamd:
+    image: clamav/clamav:latest
+    volumes:
+      - clamd:/var/lib/clamav
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:
+  clamd:

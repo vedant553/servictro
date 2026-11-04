@@ -1,0 +1,25 @@
+# Keep image contexts lean — never bake databases, uploads, logs or secrets.
+.pgdata
+data/
+db/
+*.log
+.zscripts/
+.env
+.env.*
+!.env.example
+node_modules
+.next
+mini-services/serviceos-api/dist
+mini-services/serviceos-api/node_modules
+packages/*/node_modules
+packages/*/dist
+coverage
+*.tsbuildinfo
+download/
+upload/
+tests/
+examples/
+skills/
+docs/
+.claude/
+.git

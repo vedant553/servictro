@@ -1,0 +1,30 @@
+# ServiceOS — production reverse proxy (Caddy, automatic TLS).
+# Replace serviceos.example.com with your domain.
+#
+#   /api/v1/*   → NestJS API (port 4000)
+#   /health/*   → NestJS API health probes
+#   everything else → Next.js web console (port 3000)
+
+serviceos.example.com {
+	encode gzip zstd
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	handle /health/* {
+		reverse_proxy api:4000
+	}
+
+	handle /api/* {
+		reverse_proxy api:4000
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+}
