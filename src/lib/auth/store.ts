@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Auth/session state for the ServiceOS web console.
+ * Auth/session state for the Servictro web console.
  *
  * The access token lives in memory ONLY (XSS hardening, Tech Spec §15.1);
  * the refresh token is an httpOnly cookie the browser sends to /api/v1/auth.

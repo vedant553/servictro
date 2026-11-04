@@ -1,5 +1,5 @@
 /**
- * ServiceOS web console — API response types.
+ * Servictro web console — API response types.
  * These mirror the NestJS API DTO/response shapes exactly (docs/API.md).
  * Money is bigint minor units serialized as string; timestamps are ISO UTC.
  */

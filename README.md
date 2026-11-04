@@ -1,4 +1,4 @@
-# ServiceOS
+# Servictro
 
 **Industrial after-sales service & asset operations platform** for LT/HT electrical panel,
 switchgear and transformer manufacturers.

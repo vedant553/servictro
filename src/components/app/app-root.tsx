@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * ServiceOS console root: auth lifecycle + hash router → view registry.
+ * Servictro console root: auth lifecycle + hash router → view registry.
  * One user-visible route ("/") per the deployment sandbox; navigation is
  * hash-based (see src/lib/router.ts). The page entry loads this module with
  * ssr:false because auth state (localStorage, cookies) is client-only.
@@ -138,7 +138,7 @@ function BootSplash() {
   );
 }
 
-function ServiceOSApp() {
+function ServictroApp() {
   const phase = useAuth((s) => s.phase);
   const initialize = useAuth((s) => s.initialize);
   const route = useHashRoute();
@@ -160,16 +160,16 @@ function ServiceOSApp() {
   if (phase === "anonymous") return <LoginView />;
 
   return (
-    <AppShell title={VIEW_TITLES[route.segments[0] ?? "dashboard"] ?? "ServiceOS"}>
+    <AppShell title={VIEW_TITLES[route.segments[0] ?? "dashboard"] ?? "Servictro"}>
       <RoutedView />
     </AppShell>
   );
 }
 
-export function ServiceOSAppRoot() {
+export function ServictroAppRoot() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ServiceOSApp />
+      <ServictroApp />
     </QueryClientProvider>
   );
 }

@@ -38,6 +38,9 @@ services:
         NEXT_PUBLIC_APP_URL: ${PUBLIC_APP_URL}
     environment:
       NODE_ENV: production
+      # Fallback same-origin proxy for direct-to-web contexts (Caddyfile routes
+      # XTransformPort traffic straight to api:4000, so this is normally inert).
+      API_PROXY_ORIGIN: http://api:4000
     expose:
       - "3000"
     restart: unless-stopped

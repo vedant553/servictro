@@ -1,5 +1,5 @@
 /**
- * ServiceOS design system — single source of truth for semantic styling of
+ * Servictro design system — single source of truth for semantic styling of
  * domain enums (Tech Spec §7). Every status ships with a human label, a badge
  * tone and an icon; status is NEVER conveyed by colour alone (a11y rule).
  *

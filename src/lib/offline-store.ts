@@ -8,7 +8,7 @@
  *    profile can never surface one user's job pack, site access notes or
  *    queued captures to another user (or push them under the wrong tenant's
  *    authorization).
- *  - `clearOfflineData()` purges all ServiceOS offline caches + queues —
+ *  - `clearOfflineData()` purges all Servictro offline caches + queues —
  *    called on logout and account/workspace switching.
  *  - Queued operations survive page reloads and browser restarts (localStorage
  *    is durable), and are only removed from the queue when the SERVER has
@@ -202,7 +202,7 @@ export function anyPendingOperations(): boolean {
 }
 
 /**
- * Purge ALL ServiceOS offline data — job packs (site addresses, access
+ * Purge ALL Servictro offline data — job packs (site addresses, access
  * instructions, customer names), sync queues, cursors and device ids, plus
  * legacy unscoped keys. Called on logout and on workspace switch; the only
  * durable state intentionally kept is the selected-tenant hint (re-verified

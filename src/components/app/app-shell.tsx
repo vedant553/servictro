@@ -108,9 +108,9 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div className="flex h-full flex-col gap-1 overflow-y-auto p-3 [scrollbar-width:thin]">
       <div className="mb-2 flex items-center gap-3 px-2 py-3">
-        <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary text-base font-bold text-primary-foreground">S</span>
+        <img src="/logo-mark.png" alt="Servictro" className="size-9 shrink-0 rounded-lg" />
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-white">ServiceOS</p>
+          <p className="truncate text-sm font-semibold text-white">Servictro</p>
           <p className="truncate text-xs text-white/50">{tenant?.name ?? membership?.tenantName ?? "Workspace"}</p>
         </div>
       </div>
@@ -146,7 +146,7 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
       })}
 
       <div className="mt-auto px-2 pb-1 pt-4 text-[10px] leading-relaxed text-white/30">
-        ServiceOS v0.1 · demo environment
+        Servictro v0.1 · demo environment
         <br />
         data isolated per tenant
       </div>
@@ -379,7 +379,7 @@ export function AppShell({ children, title }: { children: React.ReactNode; title
         </main>
 
         <footer className="mt-auto border-t bg-card px-6 py-3 text-xs text-muted-foreground">
-          ServiceOS — demo environment · fictional seed data · every action is audit-logged
+          Servictro — demo environment · fictional seed data · every action is audit-logged
         </footer>
       </div>
     </div>

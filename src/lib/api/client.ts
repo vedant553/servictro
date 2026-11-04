@@ -1,5 +1,5 @@
 /**
- * ServiceOS typed API client (web console → NestJS API).
+ * Servictro typed API client (web console → NestJS API).
  *
  * - Same-origin relative URLs only. The platform gateway routes requests that
  *   carry `?XTransformPort=4000` to the API; everything else hits Next.js.

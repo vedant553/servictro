@@ -16,12 +16,12 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "ServiceOS — After-Sales Service & Asset Operations",
-    template: "%s · ServiceOS",
+    default: "Servictro — After-Sales Service & Asset Operations",
+    template: "%s · Servictro",
   },
   description:
-    "ServiceOS is the after-sales service and asset operations platform for LT/HT electrical panel and switchgear manufacturers — customers, sites, assets, service requests, work orders, contracts and preventive maintenance in one system.",
-  applicationName: "ServiceOS",
+    "Servictro is the after-sales service and asset operations platform for LT/HT electrical panel and switchgear manufacturers — customers, sites, assets, service requests, work orders, contracts and preventive maintenance in one system.",
+  applicationName: "Servictro",
   robots: { index: false, follow: false },
   // PWA (audit PWA-01): installable web app manifest + icons.
   manifest: "/manifest.webmanifest",
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "ServiceOS",
+    title: "Servictro",
   },
 };
 

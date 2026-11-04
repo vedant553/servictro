@@ -69,7 +69,7 @@ async function bootstrap(): Promise<void> {
 
   if (env.enableSwagger) {
     const config = new DocumentBuilder()
-      .setTitle('ServiceOS API')
+      .setTitle('Servictro API')
       .setDescription('Industrial after-sales service & asset operations platform — REST API v1')
       .setVersion('1.0.0')
       .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' })

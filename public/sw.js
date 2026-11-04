@@ -114,7 +114,7 @@ self.addEventListener('fetch', (event) => {
           const cached = await caches.match(request);
           if (cached) return cached;
           const offline = await caches.match(OFFLINE_URL);
-          return offline ?? new Response('ServiceOS is offline', { status: 503, headers: { 'Content-Type': 'text/plain' } });
+          return offline ?? new Response('Servictro is offline', { status: 503, headers: { 'Content-Type': 'text/plain' } });
         }
       })(),
     );

@@ -16,7 +16,7 @@ export default function OfflinePage() {
       <span className="grid size-14 place-items-center rounded-2xl bg-[#0b1f33] text-2xl font-bold text-white">S</span>
       <h1 className="text-xl font-semibold">You are offline</h1>
       <p className="max-w-md text-sm text-muted-foreground">
-        ServiceOS cannot reach the server right now. Your assigned job pack, site details and any captures you made are
+        Servictro cannot reach the server right now. Your assigned job pack, site details and any captures you made are
         still stored on this device and will sync automatically once the connection returns.
       </p>
       <Link

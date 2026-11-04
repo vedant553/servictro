@@ -61,9 +61,9 @@ export function LoginView() {
         />
         <div className="relative">
           <div className="flex items-center gap-3">
-            <span className="grid size-10 place-items-center rounded-lg bg-[#2563eb] font-bold">S</span>
+            <img src="/logo-mark.png" alt="Servictro" className="size-10 rounded-lg" />
             <div>
-              <p className="text-lg font-semibold leading-tight">ServiceOS</p>
+              <p className="text-lg font-semibold leading-tight">Servictro</p>
               <p className="text-xs text-white/60">After-sales service & asset operations</p>
             </div>
           </div>
@@ -76,7 +76,7 @@ export function LoginView() {
               every service visit it needs.
             </h1>
             <p className="text-sm leading-relaxed text-white/70">
-              ServiceOS connects your installed base to the service desk: assets, contracts, work orders, field
+              Servictro connects your installed base to the service desk: assets, contracts, work orders, field
               checklists and analytics in one operational system for electrical OEMs.
             </p>
           </div>
@@ -101,8 +101,8 @@ export function LoginView() {
         <div className="w-full max-w-md space-y-6">
           <div className="space-y-2 lg:hidden">
             <div className="flex items-center gap-3">
-              <span className="grid size-9 place-items-center rounded-lg bg-primary font-bold text-primary-foreground">S</span>
-              <p className="text-lg font-semibold">ServiceOS</p>
+              <img src="/logo-mark.png" alt="Servictro" className="size-9 rounded-lg ring-1 ring-border" />
+              <p className="text-lg font-semibold">Servictro</p>
             </div>
           </div>
           <div>

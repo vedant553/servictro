@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * DataTable — thin TanStack Table wrapper with ServiceOS styling:
+ * DataTable — thin TanStack Table wrapper with Servictro styling:
  * 44px rows, sticky header, hover affordance, optional row navigation,
  * loading skeletons and empty state. Sorting is opt-in per column.
  */

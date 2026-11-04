@@ -118,6 +118,8 @@ services:
       - "3000:3000"
     environment:
       NEXT_PUBLIC_APP_URL: http://localhost:3000
+      # Same-origin API proxy target (next.config.ts rewrites /api/v1/* here).
+      API_PROXY_ORIGIN: http://api:4000
     depends_on:
       api:
         condition: service_healthy
