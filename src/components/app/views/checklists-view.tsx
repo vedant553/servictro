@@ -320,6 +320,7 @@ export function ChecklistsView() {
         data={templates.data ?? []}
         loading={templates.isLoading}
         onRowClick={(row) => (window.location.hash = `#/checklists/${row.id}`)}
+        rowNoun="templates"
         emptyTitle="No templates"
         emptyDescription="Create LT panel and HT switchgear PM checklists to standardize field work."
         emptyAction={canManage ? <Button size="sm" onClick={() => setCreateOpen(true)}><ListChecks className="mr-1.5 size-4" aria-hidden />Create template</Button> : undefined}

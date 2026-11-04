@@ -17,11 +17,20 @@ import { TextBadge } from "@/components/app/shared/status-badge";
 import { useAuth, useCan, useCurrentMembership } from "@/lib/auth/store";
 import { fmtDateTime, fmtRelative, fmtDuration } from "@/lib/format";
 import { href } from "@/lib/router";
-import { Bell, CheckCheck, ScrollText, Settings, Save } from "lucide-react";
+import { Bell, CheckCheck, Settings, Save, Wrench, ClipboardList, CalendarClock, FileSignature } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
 /* Notifications                                                       */
 /* ------------------------------------------------------------------ */
+
+const NOTIFICATION_CATEGORY_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
+  work_order: Wrench,
+  service_request: ClipboardList,
+  maintenance: CalendarClock,
+  contract: FileSignature,
+};
+
+const notificationIcon = (category: string) => NOTIFICATION_CATEGORY_ICON[category] ?? Bell;
 
 export function NotificationsView() {
   const queryClient = useQueryClient();
@@ -50,6 +59,7 @@ export function NotificationsView() {
           <div className="flex items-center gap-2">
             <EnumSelect
               id="nt-filter"
+              triggerClassName="w-36"
               options={[
                 { value: "", label: "All" },
                 { value: "true", label: "Unread only" },
@@ -69,36 +79,57 @@ export function NotificationsView() {
         <EmptyState icon={<Bell />} title="No notifications" description="Alerts arrive as work progresses." />
       ) : (
         <ul className="space-y-2">
-          {notifications.data.map((n) => (
-            <li
-              key={n.id}
-              className={`rounded-lg border p-4 ${!n.readAt ? "border-primary/30 bg-[color:var(--status-info-bg)]/40" : "bg-card"}`}
-            >
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="font-medium">{n.title}</p>
+          {notifications.data.map((n) => {
+            const Icon = notificationIcon(n.category);
+            const target =
+              n.entityType === "work_order" && n.entityId
+                ? { label: "Open work order", path: `/work-orders/${n.entityId}` }
+                : n.entityType === "service_request" && n.entityId
+                  ? { label: "Open request", path: `/requests/${n.entityId}` }
+                  : undefined;
+            return (
+              <li
+                key={n.id}
+                className={`flex gap-3 rounded-xl border p-4 transition-colors ${
+                  !n.readAt ? "border-primary/30 bg-[color:var(--status-info-bg)]/40" : "bg-card hover:bg-muted/30"
+                }`}
+              >
+                <span
+                  className={`mt-0.5 grid size-9 shrink-0 place-items-center rounded-lg ${
+                    !n.readAt ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                  }`}
+                  aria-hidden
+                >
+                  <Icon className="size-4.5" />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="font-medium leading-snug">{n.title}</p>
+                    <p className="shrink-0 text-xs text-muted-foreground">{fmtRelative(n.createdAt)}</p>
+                  </div>
                   <p className="mt-0.5 text-sm text-muted-foreground">{n.body}</p>
-                  <p className="mt-1 text-xs uppercase tracking-wide text-muted-foreground">
-                    {n.category.replace(/_/g, " ")} · {fmtRelative(n.createdAt)}
-                  </p>
+                  <div className="mt-2 flex flex-wrap items-center gap-3">
+                    <span className="inline-flex items-center gap-1.5 text-xs uppercase tracking-wide text-muted-foreground">
+                      {!n.readAt ? <span className="size-1.5 rounded-full bg-primary" aria-hidden /> : null}
+                      {n.category.replace(/_/g, " ")}
+                    </span>
+                    <span className="flex items-center gap-2">
+                      {target ? (
+                        <a href={href(target.path)} className="text-xs font-medium text-primary hover:underline">
+                          {target.label}
+                        </a>
+                      ) : null}
+                      {!n.readAt ? (
+                        <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => markRead.mutate(n.id)}>
+                          <CheckCheck className="mr-1 size-3.5" aria-hidden /> Mark read
+                        </Button>
+                      ) : null}
+                    </span>
+                  </div>
                 </div>
-                {!n.readAt ? (
-                  <Button size="sm" variant="ghost" onClick={() => markRead.mutate(n.id)}>
-                    Mark read
-                  </Button>
-                ) : null}
-                {n.entityType === "work_order" && n.entityId ? (
-                  <a href={href(`/work-orders/${n.entityId}`)}>
-                    <Button size="sm" variant="outline">Open work order</Button>
-                  </a>
-                ) : n.entityType === "service_request" && n.entityId ? (
-                  <a href={href(`/requests/${n.entityId}`)}>
-                    <Button size="sm" variant="outline">Open request</Button>
-                  </a>
-                ) : null}
-              </div>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
@@ -126,7 +157,11 @@ export function AuditView() {
   });
 
   const columns: ColumnDef<AuditEvent, unknown>[] = [
-    { accessorKey: "createdAt", header: "When", cell: (i) => <span className="whitespace-nowrap text-muted-foreground">{fmtDateTime(i.getValue<string>())}</span> },
+    {
+      accessorKey: "occurredAt",
+      header: "When",
+      cell: (i) => <span className="whitespace-nowrap text-muted-foreground">{fmtDateTime(i.getValue<string>())}</span>,
+    },
     { accessorKey: "action", header: "Action", cell: (i) => <span className="font-mono text-xs font-medium">{i.getValue<string>()}</span> },
     { accessorKey: "resourceType", header: "Resource", cell: (i) => <TextBadge>{i.getValue<string>().replace(/_/g, " ")}</TextBadge> },
     {
@@ -152,6 +187,7 @@ export function AuditView() {
       <div className="flex flex-wrap items-center gap-2">
         <EnumSelect
           id="aud-action"
+          triggerClassName="w-48"
           options={[
             { value: "", label: "All actions" },
             ...Array.from(new Set((audit.data ?? []).map((e) => e.action))).sort().map((a) => ({ value: a, label: actionLabel(a) })),
@@ -162,6 +198,7 @@ export function AuditView() {
         />
         <EnumSelect
           id="aud-resource"
+          triggerClassName="w-44"
           options={[
             { value: "", label: "All resources" },
             ...Array.from(new Set((audit.data ?? []).map((e) => e.resourceType))).sort().map((r) => ({ value: r, label: r.replace(/_/g, " ") })),
@@ -171,7 +208,14 @@ export function AuditView() {
           placeholder="All resources"
         />
       </div>
-      <DataTable columns={columns} data={audit.data ?? []} loading={audit.isLoading} emptyTitle="No audit events match" ariaLabel="Audit events" />
+      <DataTable
+        columns={columns}
+        data={audit.data ?? []}
+        loading={audit.isLoading}
+        emptyTitle="No audit events match"
+        rowNoun="events"
+        ariaLabel="Audit events"
+      />
     </div>
   );
 }
@@ -257,24 +301,32 @@ export function SettingsView() {
             <Field label="Currency" htmlFor="set-currency" hint="Applies to contract values">
               <EnumSelect id="set-currency" options={CURRENCY_OPTIONS} value={currencyCode} onValueChange={setCurrencyCode} />
             </Field>
+            <div className="flex items-end justify-end">
+              <Button onClick={() => { setError(null); save.mutate(); }} disabled={save.isPending || !name || !timezone}>
+                <Save className="mr-1.5 size-4" aria-hidden /> {save.isPending ? "Saving…" : "Save settings"}
+              </Button>
+            </div>
           </div>
           <InlineError message={error} />
-          <div className="mt-4">
-            <Button onClick={() => { setError(null); save.mutate(); }} disabled={save.isPending || !name || !timezone}>
-              <Save className="mr-1.5 size-4" aria-hidden /> {save.isPending ? "Saving…" : "Save settings"}
-            </Button>
-          </div>
         </SectionCard>
       )}
 
       <SectionCard title="SLA defaults" description="Snapshotted onto work orders at creation; contracts override these when set.">
-        <DetailList>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {(["critical", "high", "medium", "low"] as const).map((sev) => (
-            <DetailItem key={sev} label={`${sev} response / resolution`}>
-              {fmtDuration(sla?.[sev])} / {fmtDuration(slaResolution?.[sev])}
-            </DetailItem>
+            <div key={sev} className="rounded-lg border bg-muted/30 px-4 py-3">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{sev}</p>
+              <p className="mt-1.5 text-sm font-semibold tabular-nums">
+                <span className="text-[color:var(--status-info)]">{fmtDuration(sla?.[sev])}</span>
+                <span className="text-muted-foreground"> response</span>
+              </p>
+              <p className="mt-0.5 text-sm font-semibold tabular-nums">
+                <span className="text-[color:var(--status-accent)]">{fmtDuration(slaResolution?.[sev])}</span>
+                <span className="text-muted-foreground"> resolution</span>
+              </p>
+            </div>
           ))}
-        </DetailList>
+        </div>
         <p className="mt-3 text-xs text-muted-foreground">
           Values are tenant settings (ADR gap #2) — validate targets with pilots before treating them as commitments.
         </p>

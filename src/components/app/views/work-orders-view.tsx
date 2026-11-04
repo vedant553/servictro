@@ -675,9 +675,10 @@ export function WorkOrdersView({ workOrderId }: { workOrderId?: string }) {
           <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
           <Input aria-label="Search work orders" placeholder="Search title or WO number…" className="pl-8" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        <EnumSelect id="wo-filter-status" options={[{ value: "", label: "All statuses" }, ...workOrderStatusOptions]} value={status} onValueChange={setStatus} placeholder="All statuses" />
+        <EnumSelect id="wo-filter-status" triggerClassName="w-40" options={[{ value: "", label: "All statuses" }, ...workOrderStatusOptions]} value={status} onValueChange={setStatus} placeholder="All statuses" />
         <EnumSelect
           id="wo-filter-overdue"
+          triggerClassName="w-40"
           options={[
             { value: "", label: "All work orders" },
             { value: "true", label: "Overdue only" },
@@ -692,6 +693,7 @@ export function WorkOrdersView({ workOrderId }: { workOrderId?: string }) {
         data={workOrders.data ?? []}
         loading={workOrders.isLoading}
         onRowClick={(row) => navigate(`/work-orders/${row.id}`)}
+        rowNoun="work orders"
         emptyTitle="No work orders match"
         emptyDescription="Convert a service request or create a work order directly."
         emptyAction={canWrite ? <Button size="sm" onClick={() => setCreateOpen(true)}><Plus className="mr-1.5 size-4" aria-hidden />Create work order</Button> : undefined}

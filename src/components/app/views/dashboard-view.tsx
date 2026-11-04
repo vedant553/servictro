@@ -15,8 +15,6 @@ import { href } from "@/lib/router";
 import {
   Area,
   AreaChart,
-  Bar,
-  BarChart,
   CartesianGrid,
   Legend,
   ResponsiveContainer,
@@ -27,7 +25,15 @@ import {
 import { ClipboardList, Wrench, ShieldAlert, Gauge, CalendarClock, FileSignature, Boxes, Inbox, ArrowRight, Users } from "lucide-react";
 
 const chartTooltipProps = {
-  contentStyle: { borderRadius: 10, border: "1px solid var(--border)", fontSize: 12 },
+  contentStyle: {
+    borderRadius: 10,
+    border: "1px solid var(--border)",
+    backgroundColor: "var(--card)",
+    boxShadow: "0 4px 16px rgb(11 31 51 / 0.08)",
+    fontSize: 12,
+    padding: "8px 12px",
+  },
+  labelStyle: { fontSize: 11, color: "var(--muted-foreground)", marginBottom: 2 },
 } as const;
 
 export function DashboardView() {
@@ -77,6 +83,7 @@ export function DashboardView() {
     ...d,
     label: new Date(d.day).toLocaleDateString("en-IN", { day: "2-digit", month: "short" }),
   }));
+  const workload = (o.technicianWorkload ?? []).slice(0, 8);
 
   return (
     <div className="space-y-6">
@@ -116,6 +123,7 @@ export function DashboardView() {
         <StatCard
           label="PM visits due (30d)"
           value={fmtNumber(o.maintenance.upcomingPm30Days)}
+          hint={o.maintenance.upcomingPm30Days > 0 ? "scheduled preventive visits" : "no visits scheduled"}
           icon={<CalendarClock />}
         />
         <StatCard
@@ -135,6 +143,7 @@ export function DashboardView() {
           label="New awaiting triage"
           value={fmtNumber(o.requests.newAwaitingTriage)}
           tone={o.requests.newAwaitingTriage > 0 ? "warning" : "success"}
+          hint={o.requests.newAwaitingTriage > 0 ? "qualify severity and coverage" : "intake queue is clear"}
           icon={<Inbox />}
         />
       </div>
@@ -142,8 +151,8 @@ export function DashboardView() {
       {/* Charts */}
       <div className="grid gap-4 lg:grid-cols-5">
         <SectionCard
-          title="Service volume — last 30 days"
-          description="Requests received, work orders created and work orders closed per day."
+          title="Service volume"
+          description="Requests received and work orders closed per day, last 30 days."
           className="lg:col-span-3"
         >
           {volume.length === 0 ? (
@@ -151,24 +160,55 @@ export function DashboardView() {
           ) : (
             <div className="h-72" role="img" aria-label="Area chart of daily service volume over the last 30 days">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={volume} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
+                <AreaChart data={volume} margin={{ top: 8, right: 20, left: -18, bottom: 0 }}>
                   <defs>
                     <linearGradient id="gRequests" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.25} />
+                      <stop offset="5%" stopColor="var(--chart-1)" stopOpacity={0.28} />
                       <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0} />
                     </linearGradient>
                     <linearGradient id="gClosed" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--chart-2)" stopOpacity={0.25} />
-                      <stop offset="95%" stopColor="var(--chart-2)" stopOpacity={0} />
+                      <stop offset="5%" stopColor="var(--chart-5)" stopOpacity={0.28} />
+                      <stop offset="95%" stopColor="var(--chart-5)" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                  <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="var(--muted-foreground)" tickMargin={8} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} stroke="var(--muted-foreground)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                  <XAxis
+                    dataKey="label"
+                    tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                    stroke="var(--border)"
+                    tickMargin={10}
+                    interval={Math.max(0, Math.floor(volume.length / 6) - 1)}
+                    minTickGap={24}
+                  />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} stroke="var(--border)" width={36} />
                   <Tooltip {...chartTooltipProps} />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                  <Area type="monotone" dataKey="requests" name="Requests" stroke="var(--chart-1)" fill="url(#gRequests)" strokeWidth={2} />
-                  <Area type="monotone" dataKey="closed" name="Closed WOs" stroke="var(--chart-2)" fill="url(#gClosed)" strokeWidth={2} />
+                  <Legend
+                    verticalAlign="top"
+                    align="right"
+                    iconType="plainline"
+                    iconSize={14}
+                    wrapperStyle={{ fontSize: 12, paddingBottom: 8, color: "var(--muted-foreground)" }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="requests"
+                    name="Requests"
+                    stroke="var(--chart-1)"
+                    fill="url(#gRequests)"
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 4, strokeWidth: 2 }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="closed"
+                    name="Closed WOs"
+                    stroke="var(--chart-5)"
+                    fill="url(#gClosed)"
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 4, strokeWidth: 2 }}
+                  />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
@@ -178,22 +218,29 @@ export function DashboardView() {
         <SectionCard
           title="Technician workload"
           description="Open work orders currently assigned per technician."
-          className="lg:col-span-2"
+          className="lg:col-span-2 lg:self-start"
         >
-          {!o.technicianWorkload?.length ? (
+          {!workload.length ? (
             <EmptyState title="No open assignments" description="Assign technicians to work orders to see workload distribution." />
           ) : (
-            <div className="h-72" role="img" aria-label="Bar chart of open work orders per technician">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={o.technicianWorkload} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
-                  <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} stroke="var(--muted-foreground)" />
-                  <YAxis type="category" dataKey="displayName" width={110} tick={{ fontSize: 11 }} stroke="var(--muted-foreground)" />
-                  <Tooltip {...chartTooltipProps} />
-                  <Bar dataKey="openJobs" name="Open jobs" fill="var(--chart-1)" radius={[0, 4, 4, 0]} barSize={18} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            <ul className="space-y-3" aria-label="Open work orders per technician">
+              {workload.map((t) => (
+                <li key={t.userId} className="flex items-center gap-3">
+                  <span className="w-28 shrink-0 truncate text-sm" title={t.displayName}>
+                    {t.displayName}
+                  </span>
+                  <span className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted" aria-hidden>
+                    <span
+                      className="block h-full rounded-full bg-[color:var(--brand-teal)]"
+                      style={{
+                        width: `${Math.min(100, Math.round((t.openJobs / Math.max(1, ...workload.map((w) => w.openJobs))) * 100))}%`,
+                      }}
+                    />
+                  </span>
+                  <span className="w-8 shrink-0 text-right text-sm font-semibold tabular-nums">{t.openJobs}</span>
+                </li>
+              ))}
+            </ul>
           )}
         </SectionCard>
       </div>
@@ -205,7 +252,7 @@ export function DashboardView() {
             {Object.entries(o.requests.byStatus)
               .sort((a, b) => b[1] - a[1])
               .map(([status, count]) => (
-                <li key={status} className="flex items-center justify-between rounded-md border px-3 py-2 text-sm">
+                <li key={status} className="flex items-center justify-between rounded-lg border bg-card px-3 py-2 text-sm">
                   <span className="capitalize">{status.replace(/_/g, " ")}</span>
                   <span className="font-semibold tabular-nums">{count}</span>
                 </li>
@@ -226,13 +273,13 @@ export function DashboardView() {
               <a
                 key={q.path}
                 href={href(q.path)}
-                className="group flex items-center justify-between rounded-md border px-3 py-2.5 text-sm font-medium hover:border-primary/40 hover:bg-accent/60"
+                className="group flex items-center justify-between rounded-lg border px-3 py-2.5 text-sm font-medium outline-none transition-colors hover:border-primary/40 hover:bg-accent/60 focus-visible:ring-2 focus-visible:ring-ring/50"
               >
                 <span className="flex items-center gap-2">
                   <q.icon className="size-4 text-muted-foreground" aria-hidden />
                   {q.label}
                 </span>
-                <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden />
+                <ArrowRight className="size-4 text-muted-foreground/60 transition-transform group-hover:translate-x-0.5 group-hover:text-muted-foreground" aria-hidden />
               </a>
             ))}
           </div>

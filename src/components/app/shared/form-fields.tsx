@@ -37,7 +37,7 @@ export function Field({
       <Label htmlFor={htmlFor} className="text-sm font-medium">
         {label}
         {required ? (
-          <span className="ml-0.5 text-[color:var(--status-danger)]" aria-hidden>
+          <span className="ml-1 font-semibold text-[color:var(--status-danger)]" aria-hidden>
             *
           </span>
         ) : null}
@@ -101,6 +101,7 @@ export function EnumSelect({
   placeholder,
   disabled,
   error,
+  triggerClassName,
 }: {
   id: string;
   options: Option[];
@@ -109,12 +110,18 @@ export function EnumSelect({
   placeholder?: string;
   disabled?: boolean;
   error?: string;
+  /** Width of the trigger — defaults to full (forms); pass e.g. "w-44" in toolbars. */
+  triggerClassName?: string;
 }) {
   const toInternal = (v: string | undefined) => (v === undefined || v === "" ? EMPTY_SENTINEL : v);
   const toExternal = (v: string) => (v === EMPTY_SENTINEL ? "" : v);
   return (
     <Select value={toInternal(value)} onValueChange={(v) => onValueChange(toExternal(v))} disabled={disabled}>
-      <SelectTrigger id={id} aria-invalid={error ? true : undefined} className={cn("w-full", error && "border-[color:var(--status-danger)]")}>
+      <SelectTrigger
+        id={id}
+        aria-invalid={error ? true : undefined}
+        className={cn("w-full", error && "border-[color:var(--status-danger)]", triggerClassName)}
+      >
         <SelectValue placeholder={placeholder ?? "Select…"} />
       </SelectTrigger>
       <SelectContent className="max-h-72">

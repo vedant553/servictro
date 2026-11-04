@@ -17,7 +17,7 @@ const TONE_CLASS: Record<Tone, string> = {
   danger: "border-transparent text-[color:var(--status-danger)] bg-[color:var(--status-danger-bg)]",
   info: "border-transparent text-[color:var(--status-info)] bg-[color:var(--status-info-bg)]",
   neutral: "border-transparent text-[color:var(--status-neutral)] bg-[color:var(--status-neutral-bg)]",
-  accent: "border-transparent text-[color:var(--status-info)] bg-[color:var(--status-info-bg)]",
+  accent: "border-transparent text-[color:var(--status-accent)] bg-[color:var(--status-accent-bg)]",
 };
 
 const TONE_ICON: Record<Tone, React.ComponentType<{ className?: string }>> = {
@@ -41,7 +41,7 @@ export function StatusBadge({ style, className }: { style: EnumStyle; className?
 
 export function TextBadge({ children, tone = "neutral", className }: { children: React.ReactNode; tone?: Tone; className?: string }) {
   return (
-    <Badge variant="outline" className={cn("gap-1 whitespace-nowrap", TONE_CLASS[tone], className)}>
+    <Badge variant="outline" className={cn("gap-1 whitespace-nowrap font-medium", TONE_CLASS[tone], className)}>
       {children}
     </Badge>
   );

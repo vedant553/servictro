@@ -648,9 +648,10 @@ export function AssetsView({ assetId, presetSiteId }: { assetId?: string; preset
           <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
           <Input aria-label="Search assets" placeholder="Search by code, serial or manufacturer…" className="pl-8" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        <EnumSelect id="asset-filter-family" options={[{ value: "", label: "All families" }, ...assetFamilyOptions]} value={family} onValueChange={setFamily} placeholder="All families" />
+        <EnumSelect id="asset-filter-family" triggerClassName="w-40" options={[{ value: "", label: "All families" }, ...assetFamilyOptions]} value={family} onValueChange={setFamily} placeholder="All families" />
         <EnumSelect
           id="asset-filter-status"
+          triggerClassName="w-40"
           options={[{ value: "", label: "All statuses" }, ...ASSET_STATUSES.map((s) => ({ value: s, label: ASSET_STATUS_STYLE[s].label }))]}
           value={status}
           onValueChange={setStatus}
@@ -668,6 +669,7 @@ export function AssetsView({ assetId, presetSiteId }: { assetId?: string; preset
         data={assets.data ?? []}
         loading={assets.isLoading}
         onRowClick={(row) => navigate(`/assets/${row.id}`)}
+        rowNoun="assets"
         emptyTitle="No assets match"
         emptyDescription="Register assets to unlock contracts, PM and analytics."
         emptyAction={canWrite ? <Button size="sm" onClick={() => setCreateOpen(true)}><Plus className="mr-1.5 size-4" aria-hidden />Register asset</Button> : undefined}

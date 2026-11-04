@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 export default function OfflinePage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-6 text-center">
-      <span className="grid size-14 place-items-center rounded-2xl bg-[#0b1f33] text-2xl font-bold text-white">S</span>
+      <img src="/logo-mark.png" alt="Servictro" className="size-14 rounded-2xl" />
       <h1 className="text-xl font-semibold">You are offline</h1>
       <p className="max-w-md text-sm text-muted-foreground">
         Servictro cannot reach the server right now. Your assigned job pack, site details and any captures you made are

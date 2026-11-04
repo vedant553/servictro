@@ -515,7 +515,7 @@ export interface AuditEvent {
   requestId: string | null;
   ipHash: string | null;
   metadata: Record<string, unknown>;
-  createdAt: string;
+  occurredAt: string;
 }
 
 /* ---------- Analytics ---------- */

@@ -44,9 +44,9 @@
 }
 
 :root {
-  /* ServiceOS design tokens (Tech Spec §7) — light industrial enterprise theme.
-     Navy #0B1F33 chrome, blue #2563EB primary, semantic status colours,
-     4px spacing grid, radii 6/10/14px, 44px table rows. */
+  /* Servictro design tokens — light industrial enterprise theme (Tech Spec §7).
+     Navy #0B1F33 chrome, blue #2563EB primary with teal #0E7490 brand accent,
+     semantic status colours, 4px spacing grid, radii 6/10/14px, 44px table rows. */
   --radius: 0.625rem;
   --background: #f5f7fa;
   --foreground: #0b1f33;
@@ -60,13 +60,14 @@
   --secondary-foreground: #0b1f33;
   --muted: #eef2f7;
   --muted-foreground: #5b6b7f;
-  --accent: #e8f0fe;
-  --accent-foreground: #1d4ed8;
+  --accent: #e0f2f7;
+  --accent-foreground: #0e7490;
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
-  --border: #dbe3ec;
+  --border: #d9e1ea;
   --input: #cbd5e1;
   --ring: #2563eb;
+  --brand-teal: #0891b2;
   --chart-1: #2563eb;
   --chart-2: #0e9f6e;
   --chart-3: #d97706;
@@ -74,23 +75,25 @@
   --chart-5: #0891b2;
   --sidebar: #0b1f33;
   --sidebar-foreground: #c9d6e8;
-  --sidebar-primary: #2563eb;
-  --sidebar-primary-foreground: #ffffff;
+  --sidebar-primary: #22d3ee;
+  --sidebar-primary-foreground: #0b1f33;
   --sidebar-accent: #16293f;
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: #1d3244;
-  --sidebar-ring: #2563eb;
+  --sidebar-ring: #22d3ee;
   /* Semantic status colours — always paired with text/icon, never colour alone */
-  --status-success: #0e9f6e;
-  --status-success-bg: #e7f6f0;
-  --status-warning: #b45309;
-  --status-warning-bg: #fdf3e3;
-  --status-danger: #dc2626;
-  --status-danger-bg: #fdecec;
+  --status-success: #067a55;
+  --status-success-bg: #e6f5ef;
+  --status-warning: #9a4a06;
+  --status-warning-bg: #fdf2e0;
+  --status-danger: #c21f1f;
+  --status-danger-bg: #fdeaea;
   --status-info: #1d4ed8;
   --status-info-bg: #e8f0fe;
   --status-neutral: #475569;
   --status-neutral-bg: #eef2f7;
+  --status-accent: #0e7490;
+  --status-accent-bg: #e0f2f7;
 }
 
 .dark {
@@ -132,6 +135,25 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+  }
+  ::selection {
+    @apply bg-primary/15 text-foreground;
+  }
+  /* Slim, unobtrusive scrollbars for dense data areas */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #c3cedb transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: #c3cedb;
+    border-radius: 9999px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
   }
 }

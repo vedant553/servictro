@@ -398,6 +398,7 @@ export function CustomersView({ customerId }: { customerId?: string }) {
         </div>
         <EnumSelect
           id="cust-filter-status"
+          triggerClassName="w-40"
           options={[{ value: "", label: "All statuses" }, ...CUSTOMER_STATUSES.map((s) => ({ value: s, label: s[0].toUpperCase() + s.slice(1) }))]}
           value={status}
           onValueChange={setStatus}
@@ -410,6 +411,7 @@ export function CustomersView({ customerId }: { customerId?: string }) {
         data={customers.data ?? []}
         loading={customers.isLoading}
         onRowClick={(row) => navigate(`/customers/${row.id}`)}
+        rowNoun="customers"
         emptyTitle="No customers match"
         emptyDescription={search ? "Try a different search or clear filters." : "Register your first customer to start building the installed base."}
         emptyAction={canWrite ? <Button size="sm" onClick={() => setCreateOpen(true)}><Plus className="mr-1.5 size-4" aria-hidden />Register customer</Button> : undefined}

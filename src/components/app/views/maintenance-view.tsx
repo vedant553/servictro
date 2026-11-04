@@ -240,7 +240,7 @@ function PlanActions({ plan }: { plan: MaintenancePlan }) {
   if (!canManage) return null;
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap items-center justify-end gap-1.5">
       <Button size="sm" variant="outline" onClick={() => setPreviewOpen(true)}>
         <Eye className="mr-1 size-3.5" aria-hidden /> Preview visits
       </Button>
@@ -376,6 +376,7 @@ export function MaintenanceView() {
       <div className="flex flex-wrap items-center gap-2">
         <EnumSelect
           id="plan-filter-status"
+          triggerClassName="w-40"
           options={[{ value: "", label: "All plans" }, ...PLAN_STATUSES.map((s) => ({ value: s, label: PLAN_STATUS_STYLE[s].label }))]}
           value={status}
           onValueChange={setStatus}
@@ -387,6 +388,7 @@ export function MaintenanceView() {
         columns={planColumns}
         data={plans.data ?? []}
         loading={plans.isLoading}
+        rowNoun="plans"
         emptyTitle="No PM plans"
         emptyDescription="Create a plan per asset family and contract to automate preventive visits."
         emptyAction={canManage ? <Button size="sm" onClick={() => setCreateOpen(true)}><Plus className="mr-1.5 size-4" aria-hidden />Create PM plan</Button> : undefined}
@@ -399,6 +401,7 @@ export function MaintenanceView() {
         actions={
           <EnumSelect
             id="visit-filter-status"
+            triggerClassName="w-40"
             options={[{ value: "", label: "All visits" }, ...PLANNED_VISIT_STATUSES.map((s) => ({ value: s, label: PLANNED_VISIT_STATUS_STYLE[s].label }))]}
             value={visitStatus}
             onValueChange={setVisitStatus}
@@ -411,6 +414,7 @@ export function MaintenanceView() {
           data={visits.data ?? []}
           loading={visits.isLoading}
           onRowClick={(row) => row.workOrderId && navigate(`/work-orders/${row.workOrderId}`)}
+          hideFooter
           emptyTitle="No planned visits"
           emptyDescription="Generate visits from a plan, or wait for the scheduled worker run."
           ariaLabel="Planned visits"

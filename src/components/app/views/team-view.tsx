@@ -93,10 +93,10 @@ function SkillsEditor({ member }: { member: TeamMember }) {
 
   if (!editing) {
     return (
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex min-w-0 items-center gap-2">
         <TagList items={member.skills} />
-        <Button size="sm" variant="ghost" onClick={() => setEditing(true)} aria-label="Edit skills">
-          <Wrench className="size-3.5" aria-hidden />
+        <Button size="sm" variant="ghost" className="size-6 shrink-0 p-0 text-muted-foreground" onClick={() => setEditing(true)} aria-label="Edit skills">
+          <Wrench className="size-3" aria-hidden />
         </Button>
       </div>
     );
@@ -140,7 +140,7 @@ export function TeamView() {
       header: "Role",
       cell: (i) =>
         canManage && i.row.original.role !== "owner" ? (
-          <div className="w-44">
+          <div className="w-40">
             <EnumSelect
               id={`role-${i.row.original.userId}`}
               options={roleOptions}
@@ -170,7 +170,7 @@ export function TeamView() {
             <Button
               size="sm"
               variant="ghost"
-              className="h-7 text-xs text-muted-foreground"
+              className="h-7 px-2 text-xs text-muted-foreground"
               onClick={() =>
                 updateMember.mutate({
                   userId: i.row.original.userId,
@@ -192,7 +192,7 @@ export function TeamView() {
       <PageHeader
         title="Team"
         description="Roles follow the RBAC catalog; technicians' skills drive assignment matching."
-        actions={canManage && <Button onClick={() => setInviteOpen(true)}><UserPlus className="mr-1.5 size-4" aria-hidden />Invite</Button>}
+        actions={canManage && <Button onClick={() => setInviteOpen(true)}><UserPlus className="mr-1.5 size-4" aria-hidden />Invite member</Button>}
       />
 
       <DataTable
@@ -200,6 +200,7 @@ export function TeamView() {
         data={members.data ?? []}
         loading={members.isLoading}
         emptyTitle="No members"
+        rowNoun="members"
         ariaLabel="Team members"
       />
 

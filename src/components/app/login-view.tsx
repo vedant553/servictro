@@ -59,12 +59,18 @@ export function LoginView() {
           }}
           aria-hidden
         />
+        {/* Teal corner glow — subtle industrial accent */}
+        <div
+          className="pointer-events-none absolute -right-40 -top-40 size-96 rounded-full opacity-25 blur-3xl"
+          style={{ background: "radial-gradient(circle, #22d3ee 0%, transparent 70%)" }}
+          aria-hidden
+        />
         <div className="relative">
           <div className="flex items-center gap-3">
             <img src="/logo-mark.png" alt="Servictro" className="size-10 rounded-lg" />
             <div>
               <p className="text-lg font-semibold leading-tight">Servictro</p>
-              <p className="text-xs text-white/60">After-sales service & asset operations</p>
+              <p className="text-xs text-white/70">After-sales service & asset operations</p>
             </div>
           </div>
         </div>
@@ -75,22 +81,22 @@ export function LoginView() {
               <br />
               every service visit it needs.
             </h1>
-            <p className="text-sm leading-relaxed text-white/70">
+            <p className="text-sm leading-relaxed text-white/75">
               Servictro connects your installed base to the service desk: assets, contracts, work orders, field
               checklists and analytics in one operational system for electrical OEMs.
             </p>
           </div>
           <ul className="grid gap-4 sm:grid-cols-2">
             {HIGHLIGHTS.map((h) => (
-              <li key={h.title} className="rounded-lg border border-white/10 bg-white/5 p-4">
-                <h.icon className="size-5 text-[#60a5fa]" aria-hidden />
+              <li key={h.title} className="rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
+                <h.icon className="size-5 text-[#22d3ee]" aria-hidden />
                 <p className="mt-2 text-sm font-medium">{h.title}</p>
-                <p className="mt-1 text-xs leading-relaxed text-white/60">{h.text}</p>
+                <p className="mt-1 text-xs leading-relaxed text-white/65">{h.text}</p>
               </li>
             ))}
           </ul>
         </div>
-        <p className="relative flex items-center gap-2 text-xs text-white/50">
+        <p className="relative flex items-center gap-2 text-xs text-white/60">
           <ShieldCheck className="size-4" aria-hidden />
           Multi-tenant with row-level isolation · audit-logged actions
         </p>
@@ -140,23 +146,23 @@ export function LoginView() {
             </Button>
           </form>
 
-          <Card className="border-dashed bg-muted/40">
-            <CardContent className="space-y-2 p-4 text-sm">
-              <p className="font-medium">Demo workspace (seeded, fictional data)</p>
+          <Card className="bg-muted/30">
+            <CardContent className="space-y-2.5 p-4 text-sm">
+              <p className="text-sm font-semibold">Demo workspace</p>
               <p className="text-xs text-muted-foreground">
-                This environment ships two isolated demo tenants (ADR-015). Passwords are development-only.
+                Seeded with two isolated fictional tenants. One click fills the form below.
               </p>
               <div className="grid gap-2 pt-1">
                 <Button type="button" variant="outline" size="sm" className="justify-between" onClick={() => fillDemo("owner@aurora.example", "DemoOwner#2026")}>
-                  <span>Aurora Switchgear — Owner</span>
+                  <span className="font-medium">Aurora Switchgear — Owner</span>
                   <span className="text-xs text-muted-foreground">owner@aurora.example</span>
                 </Button>
                 <Button type="button" variant="outline" size="sm" className="justify-between" onClick={() => fillDemo("tech@aurora.example", "DemoTech#2026")}>
-                  <span>Aurora Switchgear — Technician</span>
+                  <span className="font-medium">Aurora Switchgear — Technician</span>
                   <span className="text-xs text-muted-foreground">tech@aurora.example</span>
                 </Button>
                 <Button type="button" variant="outline" size="sm" className="justify-between" onClick={() => fillDemo("owner@voltline.example", "DemoOwner#2026")}>
-                  <span>Voltline Power — Owner (2nd tenant)</span>
+                  <span className="font-medium">Voltline Power — Owner</span>
                   <span className="text-xs text-muted-foreground">owner@voltline.example</span>
                 </Button>
               </div>

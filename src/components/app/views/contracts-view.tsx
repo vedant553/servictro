@@ -469,9 +469,10 @@ export function ContractsView({ contractId }: { contractId?: string }) {
       </SectionCard>
 
       <div className="flex flex-wrap items-center gap-2">
-        <EnumSelect id="cf-type" options={[{ value: "", label: "All types" }, ...contractTypeOptions]} value={type} onValueChange={setType} placeholder="All types" />
+        <EnumSelect id="cf-type" triggerClassName="w-36" options={[{ value: "", label: "All types" }, ...contractTypeOptions]} value={type} onValueChange={setType} placeholder="All types" />
         <EnumSelect
           id="cf-status"
+          triggerClassName="w-36"
           options={[
             { value: "", label: "All statuses" },
             { value: "draft", label: "Draft" },
@@ -484,7 +485,7 @@ export function ContractsView({ contractId }: { contractId?: string }) {
           onValueChange={setStatus}
           placeholder="All statuses"
         />
-        <EnumSelect id="cf-renewal" options={[{ value: "", label: "All renewal states" }, ...renewalStatusOptions]} value={renewalStatus} onValueChange={setRenewalStatus} placeholder="All renewal states" />
+        <EnumSelect id="cf-renewal" triggerClassName="w-40" options={[{ value: "", label: "All renewal states" }, ...renewalStatusOptions]} value={renewalStatus} onValueChange={setRenewalStatus} placeholder="All renewal states" />
       </div>
 
       <DataTable
@@ -492,6 +493,7 @@ export function ContractsView({ contractId }: { contractId?: string }) {
         data={contracts.data ?? []}
         loading={contracts.isLoading}
         onRowClick={(row) => navigate(`/contracts/${row.id}`)}
+        rowNoun="contracts"
         emptyTitle="No contracts match"
         emptyDescription="Create warranty and AMC contracts to drive coverage and PM."
         emptyAction={canManage ? <Button size="sm" onClick={() => setCreateOpen(true)}><Plus className="mr-1.5 size-4" aria-hidden />Create contract</Button> : undefined}

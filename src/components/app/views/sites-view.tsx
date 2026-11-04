@@ -187,6 +187,7 @@ export function SitesView({ customerId }: { customerId?: string }) {
         </div>
         <EnumSelect
           id="site-filter-status"
+          triggerClassName="w-40"
           options={[{ value: "", label: "All statuses" }, ...SITE_STATUSES.map((s) => ({ value: s, label: s[0].toUpperCase() + s.slice(1) }))]}
           value={status}
           onValueChange={setStatus}
@@ -199,6 +200,7 @@ export function SitesView({ customerId }: { customerId?: string }) {
         data={sites.data ?? []}
         loading={sites.isLoading}
         onRowClick={(row) => navigate(`/assets?siteId=${row.id}`)}
+        rowNoun="sites"
         emptyTitle="No sites match"
         emptyDescription="Add a site under a customer, then register assets into it."
         emptyAction={canWrite ? <Button size="sm" onClick={() => setCreateOpen(true)}><Plus className="mr-1.5 size-4" aria-hidden />Add site</Button> : undefined}

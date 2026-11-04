@@ -37,7 +37,7 @@ import { PageHeader, EmptyState, SectionCard, StatCard, InlineError } from "@/co
 import { Field, TextInput } from "@/components/app/shared/form-fields";
 import { WORK_ORDER_STATUS_STYLE, PRIORITY_STYLE } from "@/design-system/tokens";
 import { StatusBadge, TextBadge } from "@/components/app/shared/status-badge";
-import { fmtDateTime, fmtDue, fmtAddress } from "@/lib/format";
+import { fmtDateTime, fmtDue, fmtAddress, fmtRelative } from "@/lib/format";
 import { href, navigate } from "@/lib/router";
 import { useAuth } from "@/lib/auth/store";
 import { requestBackgroundSync } from "@/lib/pwa";
@@ -282,7 +282,7 @@ export function MyJobsView() {
           value={pendingQueue.length}
           tone={pendingQueue.length ? "warning" : "neutral"}
           icon={<CloudOff />}
-          hint={cachedPack ? `pack cached ${fmtDateTime(cachedPack.syncedAt)}` : undefined}
+          hint={cachedPack ? `pack cached ${fmtRelative(cachedPack.syncedAt)}` : undefined}
         />
       </div>
 

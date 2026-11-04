@@ -129,8 +129,8 @@ function NotPermittedView({ what }: { what: string }) {
 
 function BootSplash() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-background">
-      <span className="grid size-12 place-items-center rounded-xl bg-[#0b1f33] text-xl font-bold text-white">S</span>
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background">
+      <img src="/logo-mark.png" alt="Servictro" className="size-14 rounded-xl" />
       <p className="flex items-center gap-2 text-sm text-muted-foreground">
         <Loader2 className="size-4 animate-spin" aria-hidden /> Restoring your session…
       </p>

@@ -3,7 +3,8 @@
 /**
  * DataTable — thin TanStack Table wrapper with Servictro styling:
  * 44px rows, sticky header, hover affordance, optional row navigation,
- * loading skeletons and empty state. Sorting is opt-in per column.
+ * loading skeletons, empty state and a result-count footer. Sorting is
+ * opt-in per column.
  */
 import {
   flexRender,
@@ -27,6 +28,10 @@ export interface DataTableProps<TData> {
   emptyTitle?: string;
   emptyDescription?: string;
   emptyAction?: React.ReactNode;
+  /** noun used in the count footer, e.g. "requests" → "3 requests" */
+  rowNoun?: string;
+  /** hide the "N rows" footer (detail tables inside cards) */
+  hideFooter?: boolean;
   /** announce for screen readers when the table is empty */
   ariaLabel?: string;
 }
@@ -39,6 +44,8 @@ export function DataTable<TData>({
   emptyTitle = "Nothing here yet",
   emptyDescription,
   emptyAction,
+  rowNoun = "rows",
+  hideFooter,
   ariaLabel,
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -56,8 +63,10 @@ export function DataTable<TData>({
     return <EmptyState title={emptyTitle} description={emptyDescription} action={emptyAction} />;
   }
 
+  const noun = rowNoun === "rows" ? "rows" : rowNoun;
+
   return (
-    <div className="overflow-hidden rounded-lg border bg-card">
+    <div className="overflow-hidden rounded-xl border bg-card shadow-xs">
       <Table aria-label={ariaLabel}>
         <TableHeader>
           {table.getHeaderGroups().map((hg) => (
@@ -66,11 +75,14 @@ export function DataTable<TData>({
                 const canSort = header.column.getCanSort();
                 const sorted = header.column.getIsSorted();
                 return (
-                  <TableHead key={header.id} className="h-10 bg-muted/60 text-xs font-semibold uppercase tracking-wide">
+                  <TableHead
+                    key={header.id}
+                    className="h-10 border-b bg-muted/50 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground"
+                  >
                     {header.isPlaceholder ? null : canSort ? (
                       <button
                         type="button"
-                        className="-ml-1 inline-flex items-center gap-1 rounded px-1 py-0.5 hover:text-foreground"
+                        className="-ml-1 inline-flex items-center gap-1 rounded px-1 py-0.5 transition-colors hover:text-foreground"
                         onClick={header.column.getToggleSortingHandler()}
                       >
                         {flexRender(header.column.columnDef.header, header.getContext())}
@@ -95,7 +107,7 @@ export function DataTable<TData>({
           {table.getRowModel().rows.map((row) => (
             <TableRow
               key={row.id}
-              className={cn("h-11", onRowClick && "cursor-pointer")}
+              className={cn("h-11", onRowClick && "cursor-pointer focus-visible:bg-muted/60")}
               onClick={onRowClick ? () => onRowClick(row.original) : undefined}
               tabIndex={onRowClick ? 0 : undefined}
               onKeyDown={
@@ -118,6 +130,11 @@ export function DataTable<TData>({
           ))}
         </TableBody>
       </Table>
+      {!hideFooter ? (
+        <p className="border-t bg-card px-4 py-2.5 text-xs text-muted-foreground" aria-live="polite">
+          {data.length} {data.length === 1 ? noun.replace(/s$/, "") : noun}
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -685,8 +685,8 @@ export function RequestsView({ requestId }: { requestId?: string }) {
           <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
           <Input aria-label="Search requests" placeholder="Search subject, request no…" className="pl-8" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        <EnumSelect id="rq-filter-status" options={[{ value: "", label: "All statuses" }, ...requestStatusOptions]} value={status} onValueChange={setStatus} placeholder="All statuses" />
-        <EnumSelect id="rq-filter-sev" options={[{ value: "", label: "All severities" }, ...severityOptions]} value={severity} onValueChange={setSeverity} placeholder="All severities" />
+        <EnumSelect id="rq-filter-status" triggerClassName="w-40" options={[{ value: "", label: "All statuses" }, ...requestStatusOptions]} value={status} onValueChange={setStatus} placeholder="All statuses" />
+        <EnumSelect id="rq-filter-sev" triggerClassName="w-40" options={[{ value: "", label: "All severities" }, ...severityOptions]} value={severity} onValueChange={setSeverity} placeholder="All severities" />
       </div>
 
       <DataTable
@@ -694,6 +694,7 @@ export function RequestsView({ requestId }: { requestId?: string }) {
         data={requests.data ?? []}
         loading={requests.isLoading}
         onRowClick={(row) => navigate(`/requests/${row.id}`)}
+        rowNoun="requests"
         emptyTitle="No requests match"
         emptyDescription="Log the first customer-reported issue to start the workflow."
         emptyAction={canWrite ? <Button size="sm" onClick={() => setCreateOpen(true)}><Plus className="mr-1.5 size-4" aria-hidden />Log request</Button> : undefined}
