@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Noto+Serif+SC:wght@400;700;900&family=Inter:wght@300;400;500;600&family=Noto+Sans+SC:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    @page { size: 794px 1123px; margin: 0; }
+    :root {
+      --c-bg: #0a1628;
+      --c-accent: #4da8da;
+      --c-text: #e8f0f8;
+      --c-muted: #7a9bb8;
+      --c-glow: #2d7ab3;
+    }
+    html, body {
+      margin: 0; padding: 0;
+      width: 794px; height: 1123px;
+      background: var(--c-bg);
+      color: var(--c-text);
+      font-family: 'Inter', 'Noto Sans SC', sans-serif;
+    }
+    @media screen {
+      html { height: auto; display: flex; justify-content: center; min-height: 100vh; background: var(--c-bg); }
+      body { transform-origin: top center; scale: min(1, calc(100vw / 794), calc(100vh / 1123)); margin: 0 auto; box-shadow: 0 0 60px rgba(0,0,0,0.3); }
+    }
+    .cover { width: 794px; height: 1123px; position: relative; box-sizing: border-box; border: none; outline: none; box-shadow: none; }
+    /* Layer 1 — background glow, clipped */
+    .bg-layer { position: absolute; inset: 0; overflow: hidden; z-index: 1; }
+    .glow-a { position: absolute; left: 0; top: 0; width: 420px; height: 420px;
+      background: radial-gradient(circle at 30% 30%, rgba(45,122,179,0.10), rgba(45,122,179,0) 70%); }
+    .glow-b { position: absolute; right: 0; bottom: 0; width: 460px; height: 460px;
+      background: radial-gradient(circle at 70% 70%, rgba(77,168,218,0.08), rgba(77,168,218,0) 70%); }
+    /* Layer 2 — luminous rectangular frame */
+    .frame { position: absolute; left: 60px; right: 60px; top: 80px; bottom: 80px;
+      border: 2px solid var(--c-accent); z-index: 2; }
+    /* Layer 3 — content */
+    .content { position: absolute; inset: 0; z-index: 3; }
+    .kicker { position: absolute; left: 110px; top: 138px;
+      font-size: 11pt; font-weight: 300; letter-spacing: 5px; text-transform: uppercase;
+      color: var(--c-accent); }
+    .brandmark { position: absolute; left: 110px; top: 190px;
+      font-size: 15pt; font-weight: 600; letter-spacing: 2px; color: var(--c-text); }
+    .brandmark .gear { display: inline-block; width: 13px; height: 13px; margin-right: 10px;
+      border: 2px solid var(--c-accent); border-radius: 3px; transform: rotate(45deg); }
+    .title { position: absolute; left: 110px; top: 252px;
+      font-family: 'Playfair Display', 'Noto Serif SC', serif;
+      font-size: 46pt; font-weight: 900; line-height: 1.15;
+      color: var(--c-text); max-width: 560px;
+      text-shadow: 0 0 26px rgba(77,168,218,0.28); }
+    .subtitle { position: absolute; left: 110px; top: 412px;
+      font-size: 15pt; font-weight: 300; color: var(--c-accent);
+      letter-spacing: 0.5px; max-width: 540px; line-height: 1.5; }
+    .summary { position: absolute; left: 110px; top: 505px;
+      font-size: 11.5pt; line-height: 1.7; color: var(--c-muted); max-width: 520px; }
+    .modules { position: absolute; left: 110px; top: 718px; max-width: 560px; }
+    .modules p.m-label { font-size: 9pt; letter-spacing: 3px; text-transform: uppercase;
+      color: var(--c-accent); margin: 0 0 14px 0; font-weight: 500; }
+    .chip-row { display: flex; flex-wrap: wrap; gap: 10px; max-width: 100%; }
+    .chip { font-size: 9.5pt; color: var(--c-text); border: 1px solid rgba(77,168,218,0.45);
+      border-radius: 999px; padding: 6px 14px; white-space: nowrap; }
+    .org { position: absolute; left: 110px; top: 880px; font-size: 13pt; font-weight: 500;
+      color: var(--c-text); }
+    .org small { display: block; font-size: 9.5pt; font-weight: 300; color: var(--c-muted);
+      margin-top: 6px; letter-spacing: 1px; }
+    .date { position: absolute; left: 110px; bottom: 118px; font-size: 9.5pt;
+      color: var(--c-muted); letter-spacing: 3px; text-transform: uppercase; }
+    .docref { position: absolute; right: 110px; bottom: 118px; font-size: 9.5pt;
+      color: var(--c-muted); letter-spacing: 2px; }
+  </style>
+</head>
+<body>
+  <div class="cover">
+    <div class="bg-layer">
+      <div class="glow-a"></div>
+      <div class="glow-b"></div>
+    </div>
+    <div class="frame"></div>
+    <div class="content">
+      <div class="kicker">User Manual</div>
+      <div class="brandmark"><span class="gear"></span>SERVICTRO</div>
+      <div class="title">Servictro<br>User Manual</div>
+      <div class="subtitle">After-Sales Service &amp; Asset Operations Platform</div>
+      <div class="summary">
+        A complete guide to every module of the Servictro console — the service
+        dashboard, service desk, work order lifecycle, technician field execution,
+        asset register, contracts, preventive maintenance, team governance and
+        workspace settings — with step-by-step workflows, the role permission
+        model and troubleshooting, documented from the live application.
+      </div>
+      <div class="modules">
+        <p class="m-label">Covered in this manual</p>
+        <div class="chip-row">
+          <span class="chip">Dashboard &amp; analytics</span>
+          <span class="chip">Service requests</span>
+          <span class="chip">Work orders</span>
+          <span class="chip">Field execution</span>
+          <span class="chip">Assets &amp; sites</span>
+          <span class="chip">Contracts &amp; PM</span>
+          <span class="chip">Team &amp; roles</span>
+          <span class="chip">Audit &amp; settings</span>
+        </div>
+      </div>
+      <div class="org">Servictro<small>GridNova Systems demo workspace · v0.1</small></div>
+      <div class="date">November 2026</div>
+      <div class="docref">DOC · UM-001</div>
+    </div>
+  </div>
+</body>
+</html>
