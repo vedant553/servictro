@@ -10,9 +10,9 @@ import { hashPassword } from '../src/common/auth/password';
  * (data-hygiene rule).
  *
  * Demo credentials (DEV ONLY — documented in docs/DEVELOPMENT_SETUP.md):
- *   owner@aurora.example    / DemoOwner#2026   (Aurora Switchgear — full demo)
- *   tech@aurora.example     / DemoTech#2026    (Aurora technician)
- *   coord@aurora.example    / DemoCoord#2026   (Aurora coordinator)
+ *   owner@gridnova.example    / DemoOwner#2026   (GridNova Systems — full demo)
+ *   tech@gridnova.example     / DemoTech#2026    (GridNova technician)
+ *   coord@gridnova.example    / DemoCoord#2026   (GridNova coordinator)
  *   owner@voltline.example  / DemoOwner#2026   (Voltline Power — tenant B)
  */
 // Seeding is a privileged bootstrap operation: run with the migration role
@@ -34,18 +34,18 @@ async function main(): Promise<void> {
   // Each tenant seeds in its own interactive transaction: a failure anywhere
   // rolls the whole tenant back instead of leaving a half-seeded database
   // (which the skip-guard would then silently preserve).
-  await prisma.$transaction(async (tx) => seedTenantAurora(tx));
+  await prisma.$transaction(async (tx) => seedTenantGridNova(tx));
   await prisma.$transaction(async (tx) => seedTenantVoltline(tx));
 
   console.log('[seed] done');
 }
 
-async function seedTenantAurora(db: Prisma.TransactionClient | PrismaClient = prisma): Promise<void> {
+async function seedTenantGridNova(db: Prisma.TransactionClient | PrismaClient = prisma): Promise<void> {
   const tenant = await db.tenant.create({
     data: {
-      slug: 'aurora-switchgear',
-      name: 'Aurora Switchgear Pvt. Ltd.',
-      legalName: 'Aurora Switchgear Private Limited',
+      slug: 'gridnova-systems',
+      name: 'GridNova Systems Pvt. Ltd.',
+      legalName: 'GridNova Systems Private Limited',
       timezone: 'Asia/Kolkata',
       settings: {
         slaResponseMinutes: { low: 480, medium: 240, high: 120, critical: 60 },
@@ -58,7 +58,7 @@ async function seedTenantAurora(db: Prisma.TransactionClient | PrismaClient = pr
   const users = await Promise.all([
     db.user.create({
       data: {
-        email: 'owner@aurora.example',
+        email: 'owner@gridnova.example',
         displayName: 'Priya Sharma',
         passwordHash: await hashPassword('DemoOwner#2026'),
         memberships: { create: { tenantId, role: 'owner', status: 'active', title: 'Managing Director' } },
@@ -66,7 +66,7 @@ async function seedTenantAurora(db: Prisma.TransactionClient | PrismaClient = pr
     }),
     db.user.create({
       data: {
-        email: 'coord@aurora.example',
+        email: 'coord@gridnova.example',
         displayName: 'Rahul Mehta',
         passwordHash: await hashPassword('DemoCoord#2026'),
         memberships: { create: { tenantId, role: 'coordinator', status: 'active', title: 'Service Coordinator' } },
@@ -74,7 +74,7 @@ async function seedTenantAurora(db: Prisma.TransactionClient | PrismaClient = pr
     }),
     db.user.create({
       data: {
-        email: 'tech@aurora.example',
+        email: 'tech@gridnova.example',
         displayName: 'Sunil Kadam',
         passwordHash: await hashPassword('DemoTech#2026'),
         memberships: {
@@ -84,7 +84,7 @@ async function seedTenantAurora(db: Prisma.TransactionClient | PrismaClient = pr
     }),
     db.user.create({
       data: {
-        email: 'manager@aurora.example',
+        email: 'manager@gridnova.example',
         displayName: 'Meera Iyer',
         passwordHash: await hashPassword('DemoOwner#2026'),
         memberships: { create: { tenantId, role: 'service_manager', status: 'active', title: 'Head of Service' } },
@@ -191,7 +191,7 @@ async function seedTenantAurora(db: Prisma.TransactionClient | PrismaClient = pr
       assetCode: 'AST-000101',
       serialNumber: 'AUR-LT-2024-0789',
       assetFamily: 'lt_panel',
-      manufacturer: 'Aurora Switchgear',
+      manufacturer: 'GridNova Systems',
       model: 'ASG-415-LT-12F',
       commissioningDate: new Date('2024-06-15'),
       specification: {
@@ -209,7 +209,7 @@ async function seedTenantAurora(db: Prisma.TransactionClient | PrismaClient = pr
       assetCode: 'AST-000102',
       serialNumber: 'AUR-HT-2023-0212',
       assetFamily: 'ht_switchgear',
-      manufacturer: 'Aurora Switchgear',
+      manufacturer: 'GridNova Systems',
       model: 'ASG-11KV-VCB-01',
       commissioningDate: new Date('2023-11-02'),
       specification: {
@@ -305,7 +305,7 @@ async function seedTenantAurora(db: Prisma.TransactionClient | PrismaClient = pr
       assetCode: 'AST-000103',
       serialNumber: 'AUR-LT-2025-0455',
       assetFamily: 'lt_panel',
-      manufacturer: 'Aurora Switchgear',
+      manufacturer: 'GridNova Systems',
       model: 'ASG-415-LT-8F',
       commissioningDate: new Date('2025-02-10'),
       specification: {
@@ -540,7 +540,7 @@ async function seedTenantAurora(db: Prisma.TransactionClient | PrismaClient = pr
     ],
   });
 
-  console.log(`[seed] Aurora Switchgear tenant ready (${tenant.slug})`);
+  console.log(`[seed] GridNova Systems tenant ready (${tenant.slug})`);
   void warranty;
   void asset3;
 }
@@ -602,7 +602,7 @@ async function seedTenantVoltline(db: Prisma.TransactionClient | PrismaClient = 
       { tenantId: tenant.id, key: 'asset', prefix: 'AST', nextValue: 102 },
     ],
   });
-  console.log(`[seed] Voltline Power tenant ready (${tenant.slug}) — same asset codes as Aurora prove tenant scoping`);
+  console.log(`[seed] Voltline Power tenant ready (${tenant.slug}) — same asset codes as GridNova prove tenant scoping`);
 }
 
 main()

@@ -177,7 +177,7 @@ function CreateAssetDialog({ open, onOpenChange }: { open: boolean; onOpenChange
               <TextInput id="a-comm" type="date" {...form.register("commissioningDate")} />
             </Field>
             <Field label="Manufacturer" htmlFor="a-manu" error={form.formState.errors.manufacturer?.message}>
-              <TextInput id="a-manu" placeholder="Aurora Switchgear" {...form.register("manufacturer")} />
+              <TextInput id="a-manu" placeholder="GridNova Systems" {...form.register("manufacturer")} />
             </Field>
             <Field label="Model" htmlFor="a-model" error={form.formState.errors.model?.message}>
               <TextInput id="a-model" placeholder="ASG-415-LT-12F" {...form.register("model")} />

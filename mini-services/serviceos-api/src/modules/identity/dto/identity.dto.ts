@@ -3,7 +3,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ROLES } from '@serviceos/contracts';
 
 export class InviteDto {
-  @ApiProperty({ example: 'rahul.mehta@aurora-switchgear.example' })
+  @ApiProperty({ example: 'rahul.mehta@gridnova-systems.example' })
   @IsEmail()
   email!: string;
 

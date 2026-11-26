@@ -6,14 +6,14 @@ const LOCALES = ['en-IN', 'en-US', 'en-GB'];
 const CURRENCIES = ['INR', 'USD', 'EUR', 'AED', 'GBP', 'SGD'];
 
 export class UpdateTenantDto {
-  @ApiPropertyOptional({ example: 'Aurora Switchgear Pvt. Ltd.' })
+  @ApiPropertyOptional({ example: 'GridNova Systems Pvt. Ltd.' })
   @IsOptional()
   @IsString()
   @MinLength(2)
   @MaxLength(160)
   name?: string;
 
-  @ApiPropertyOptional({ example: 'Aurora Switchgear Private Limited' })
+  @ApiPropertyOptional({ example: 'GridNova Systems Private Limited' })
   @IsOptional()
   @IsString()
   @MaxLength(200)

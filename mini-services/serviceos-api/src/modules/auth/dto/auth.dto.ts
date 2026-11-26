@@ -2,7 +2,7 @@ import { IsEmail, IsOptional, IsString, MaxLength, MinLength } from 'class-valid
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class RegisterDto {
-  @ApiProperty({ example: 'priya.sharma@aurora-switchgear.example' })
+  @ApiProperty({ example: 'priya.sharma@gridnova-systems.example' })
   @IsEmail()
   email!: string;
 
@@ -18,7 +18,7 @@ export class RegisterDto {
   @MaxLength(120)
   displayName!: string;
 
-  @ApiProperty({ example: 'Aurora Switchgear Pvt. Ltd.', description: 'Organization to create (ignored when invitationToken is present)' })
+  @ApiProperty({ example: 'GridNova Systems Pvt. Ltd.', description: 'Organization to create (ignored when invitationToken is present)' })
   @IsString()
   @MinLength(2)
   @MaxLength(160)
@@ -31,7 +31,7 @@ export class RegisterDto {
 }
 
 export class LoginDto {
-  @ApiProperty({ example: 'priya.sharma@aurora-switchgear.example' })
+  @ApiProperty({ example: 'priya.sharma@gridnova-systems.example' })
   @IsEmail()
   email!: string;
 

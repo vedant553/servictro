@@ -51,8 +51,8 @@ Open the preview (or `http://localhost:81` through the gateway). Demo credential
 
 | Tenant | User | Password |
 | --- | --- | --- |
-| Aurora Switchgear Pvt. Ltd. | `owner@aurora.example` | `DemoOwner#2026` |
-| Aurora Switchgear Pvt. Ltd. | `tech@aurora.example` (technician) | `DemoTech#2026` |
+| GridNova Systems Pvt. Ltd. | `owner@gridnova.example` | `DemoOwner#2026` |
+| GridNova Systems Pvt. Ltd. | `tech@gridnova.example` (technician) | `DemoTech#2026` |
 | Voltline Power Systems | `owner@voltline.example` | `DemoOwner#2026` |
 
 Interactive API docs: `http://localhost:4000/api/docs` (Swagger).

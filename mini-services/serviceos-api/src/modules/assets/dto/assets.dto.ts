@@ -33,7 +33,7 @@ export class CreateAssetDto {
   @IsIn(ASSET_FAMILIES as unknown as string[])
   assetFamily!: string;
 
-  @ApiPropertyOptional({ example: 'Aurora Switchgear' })
+  @ApiPropertyOptional({ example: 'GridNova Systems' })
   @IsOptional()
   @IsString()
   @MaxLength(120)

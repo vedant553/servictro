@@ -200,7 +200,7 @@ optimistic concurrency follow Tech Spec §10.1 exactly.
 
 **Status:** Accepted
 **Decision:** Deterministic seed (`prisma/seed.ts`) creates two isolated demo tenants
-with distinct users ("Aurora Switchgear Pvt. Ltd." and "Voltline Power Systems" —
+with distinct users ("GridNova Systems Pvt. Ltd." and "Voltline Power Systems" —
 fictional) plus customers, sites, LT/HT panel assets, a warranty + AMC contract, a
 service request → work order flow, checklist templates and PM plans, so that every
 screen and metric renders with realistic data and cross-tenant isolation can be

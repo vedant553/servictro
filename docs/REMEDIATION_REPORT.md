@@ -297,7 +297,7 @@ is therefore a cold-start proof of both the fixes and the documented setup path.
 | API unit + integration | `bun run test` | ✅ **111/111 passed, 11 suites** |
 | API typecheck + prod build | `bunx tsc --noEmit` / `tsc -p tsconfig.build.json` | ✅ clean |
 | Web typecheck / lint / prod build | `tsc --noEmit` / `eslint src` / `bun run build` | ✅ clean / 0 errors (7 pre-existing warnings) / standalone build OK |
-| Live smoke (compiled dist, not dev mode) | worker + api + standalone web | ✅ `/health/worker` healthy (least-privilege role, poll age 2 s); `/health/ready` db+storage ok; login → JWT; RLS-scoped reads; cross-tenant isolation (Aurora 3 requests, Voltline 0); auth rate limit 401×7 → **429**; `/sw.js`, manifest, `/offline`, icons all 200 |
+| Live smoke (compiled dist, not dev mode) | worker + api + standalone web | ✅ `/health/worker` healthy (least-privilege role, poll age 2 s); `/health/ready` db+storage ok; login → JWT; RLS-scoped reads; cross-tenant isolation (GridNova 3 requests, Voltline 0); auth rate limit 401×7 → **429**; `/sw.js`, manifest, `/offline`, icons all 200 |
 | `.env` untracked | `git ls-files \| grep -E '^\.env$'` | ✅ empty; remediation committed |
 
 Role state on the fresh cluster (verified): `serviceos_migrate` (login, BYPASSRLS),

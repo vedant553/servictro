@@ -32,8 +32,8 @@ const HIGHLIGHTS = [
 ];
 
 const DEMO_ACCOUNTS = [
-  { tenant: "Aurora Switchgear", role: "Owner", email: "owner@aurora.example", password: "DemoOwner#2026", initials: "AS" },
-  { tenant: "Aurora Switchgear", role: "Technician", email: "tech@aurora.example", password: "DemoTech#2026", initials: "AT" },
+  { tenant: "GridNova Systems", role: "Owner", email: "owner@gridnova.example", password: "DemoOwner#2026", initials: "GN" },
+  { tenant: "GridNova Systems", role: "Technician", email: "tech@gridnova.example", password: "DemoTech#2026", initials: "GT" },
   { tenant: "Voltline Power", role: "Owner", email: "owner@voltline.example", password: "DemoOwner#2026", initials: "VP" },
 ];
 

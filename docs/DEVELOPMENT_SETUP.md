@@ -38,10 +38,10 @@ Browse to the preview / `http://localhost:81`. Swagger: `http://localhost:4000/a
 
 | Tenant | Email | Password |
 | --- | --- | --- |
-| Aurora Switchgear Pvt. Ltd. | `owner@aurora.example` | `DemoOwner#2026` |
-| Aurora Switchgear Pvt. Ltd. | `coord@aurora.example` | `DemoCoord#2026` |
-| Aurora Switchgear Pvt. Ltd. | `tech@aurora.example` | `DemoTech#2026` |
-| Aurora Switchgear Pvt. Ltd. | `manager@aurora.example` | `DemoOwner#2026` |
+| GridNova Systems Pvt. Ltd. | `owner@gridnova.example` | `DemoOwner#2026` |
+| GridNova Systems Pvt. Ltd. | `coord@gridnova.example` | `DemoCoord#2026` |
+| GridNova Systems Pvt. Ltd. | `tech@gridnova.example` | `DemoTech#2026` |
+| GridNova Systems Pvt. Ltd. | `manager@gridnova.example` | `DemoOwner#2026` |
 | Voltline Power Systems | `owner@voltline.example` | `DemoOwner#2026` |
 
 Two isolated tenants exist so cross-tenant behaviour is demonstrable. Re-seed any time:
