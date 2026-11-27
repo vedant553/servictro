@@ -6,19 +6,24 @@ WORKDIR /app
 COPY package.json bun.lock ./
 COPY packages/contracts/package.json packages/contracts/
 COPY mini-services/serviceos-api/package.json mini-services/serviceos-api/
+# bun does NOT hoist devDeps of sub-workspaces to root node_modules.
+# prisma is a devDep of serviceos-api, so it ends up in mini-services/serviceos-api/node_modules.
 RUN bun install --frozen-lockfile
 
 FROM oven/bun:1 AS build
 WORKDIR /app
 ENV PRISMA_CLI_QUERY_ENGINE_TYPE=library
+# Copy root node_modules from deps stage
 COPY --from=deps /app/node_modules ./node_modules
+# Copy source (this may overwrite sub-workspace node_modules with local ones, so we re-overlay after)
 COPY packages/contracts ./packages/contracts
 COPY mini-services/serviceos-api ./mini-services/serviceos-api
-# bun hoists devDeps (including prisma@6) to root node_modules — use absolute path.
-# Then compile from the api sub-directory.
-RUN /app/node_modules/.bin/prisma generate --schema=/app/mini-services/serviceos-api/prisma/schema.prisma
+# Overlay sub-workspace node_modules from deps (bun puts prisma devDep here, not in root)
+COPY --from=deps /app/mini-services/serviceos-api/node_modules ./mini-services/serviceos-api/node_modules
+# Use prisma from the sub-workspace node_modules where bun actually installs devDeps
+RUN /app/mini-services/serviceos-api/node_modules/.bin/prisma generate --schema=/app/mini-services/serviceos-api/prisma/schema.prisma
 WORKDIR /app/mini-services/serviceos-api
-RUN /app/node_modules/.bin/tsc -p tsconfig.build.json
+RUN /app/mini-services/serviceos-api/node_modules/.bin/tsc -p tsconfig.build.json
 
 FROM node:22-slim AS runtime
 ENV NODE_ENV=production
