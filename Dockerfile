@@ -14,11 +14,11 @@ ENV PRISMA_CLI_QUERY_ENGINE_TYPE=library
 COPY --from=deps /app/node_modules ./node_modules
 COPY packages/contracts ./packages/contracts
 COPY mini-services/serviceos-api ./mini-services/serviceos-api
-# Install api deps separately so prisma lands in the sub-workspace node_modules
+# bun hoists devDeps (including prisma@6) to root node_modules — use absolute path.
+# Then compile from the api sub-directory.
+RUN /app/node_modules/.bin/prisma generate --schema=/app/mini-services/serviceos-api/prisma/schema.prisma
 WORKDIR /app/mini-services/serviceos-api
-RUN bun install --frozen-lockfile
-# Use the sub-workspace's installed prisma@6 binary (not bunx which fetches Prisma 8)
-RUN ./node_modules/.bin/prisma generate && ./node_modules/.bin/tsc -p tsconfig.build.json
+RUN /app/node_modules/.bin/tsc -p tsconfig.build.json
 
 FROM node:22-slim AS runtime
 ENV NODE_ENV=production
