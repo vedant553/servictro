@@ -2,13 +2,15 @@
   "name": "@serviceos/contracts",
   "version": "0.1.0",
   "private": true,
-  "description": "ServiceOS shared contracts — API-safe enums, permission catalog and types",
-  "main": "./src/index.ts",
+  "description": "ServiceOS shared contracts \u2013 API-safe enums, permission catalog and types",
+  "main": "./src/index.js",
   "types": "./src/index.ts",
   "exports": {
     ".": {
       "types": "./src/index.ts",
-      "default": "./src/index.ts"
+      "require": "./src/index.js",
+      "import": "./src/index.js",
+      "default": "./src/index.js"
     }
   },
   "scripts": {
