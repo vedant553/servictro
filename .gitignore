@@ -33,3 +33,11 @@ tool-results/
 skills/
 .zscripts/
 examples/
+
+# large binary uploads / generated assets (too large for git)
+upload/*.pdf
+upload/*.PDF
+download/*.pdf
+download/*.PDF
+scripts/manual/*.pdf
+scripts/manual/*.PDF

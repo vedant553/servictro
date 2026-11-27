@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  // "standalone" is for Docker/self-hosted. Vercel handles its own output.
+  // output: "standalone",  // disabled for Vercel deployment
   reactStrictMode: false,
   // Shared workspace package ships TypeScript source (no build step).
   transpilePackages: ["@serviceos/contracts"],
