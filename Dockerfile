@@ -37,6 +37,8 @@ COPY --from=build --chown=1001:1001 /app/packages/contracts ./packages/contracts
 COPY --from=build --chown=1001:1001 /app/mini-services/serviceos-api/dist ./mini-services/serviceos-api/dist
 COPY --from=build --chown=1001:1001 /app/mini-services/serviceos-api/prisma ./mini-services/serviceos-api/prisma
 COPY --from=build --chown=1001:1001 /app/mini-services/serviceos-api/package.json ./mini-services/serviceos-api/package.json
+# Copy sub-workspace node_modules so prisma binary is available for preDeployCommand (migrate)
+COPY --from=build --chown=1001:1001 /app/mini-services/serviceos-api/node_modules ./mini-services/serviceos-api/node_modules
 WORKDIR /app/mini-services/serviceos-api
 USER 1001
 EXPOSE 4000
