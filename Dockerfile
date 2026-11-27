@@ -11,11 +11,13 @@ RUN bun install --frozen-lockfile
 FROM oven/bun:1 AS build
 WORKDIR /app
 ENV PRISMA_CLI_QUERY_ENGINE_TYPE=library
+# Put workspace node_modules/.bin on PATH so we use the installed prisma@6, NOT bunx (which fetches latest)
+ENV PATH=/app/node_modules/.bin:$PATH
 COPY --from=deps /app/node_modules ./node_modules
 COPY packages/contracts ./packages/contracts
 COPY mini-services/serviceos-api ./mini-services/serviceos-api
 WORKDIR /app/mini-services/serviceos-api
-RUN bunx prisma generate && bunx tsc -p tsconfig.build.json
+RUN prisma generate && tsc -p tsconfig.build.json
 
 FROM node:22-slim AS runtime
 ENV NODE_ENV=production
