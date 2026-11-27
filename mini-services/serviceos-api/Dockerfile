@@ -21,7 +21,7 @@ FROM oven/bun:1 AS build
 WORKDIR /app
 ENV PRISMA_CLI_QUERY_ENGINE_TYPE=library
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/packages/contracts/node_modules ./packages/contracts/node_modules
+# packages/contracts is pure TypeScript source with no node_modules of its own
 COPY packages/contracts ./packages/contracts
 COPY mini-services/serviceos-api ./mini-services/serviceos-api
 WORKDIR /app/mini-services/serviceos-api
@@ -38,7 +38,6 @@ RUN apt-get update \
  && useradd --system --uid 1001 --create-home serviceos
 COPY --from=build --chown=1001:1001 /app/node_modules ./node_modules
 COPY --from=build --chown=1001:1001 /app/packages/contracts ./packages/contracts
-COPY --from=build --chown=1001:1001 /app/mini-services/serviceos-api/node_modules ./mini-services/serviceos-api/node_modules
 COPY --from=build --chown=1001:1001 /app/mini-services/serviceos-api/dist ./mini-services/serviceos-api/dist
 COPY --from=build --chown=1001:1001 /app/mini-services/serviceos-api/prisma ./mini-services/serviceos-api/prisma
 COPY --from=build --chown=1001:1001 /app/mini-services/serviceos-api/package.json ./mini-services/serviceos-api/package.json
